@@ -90,10 +90,23 @@ class Settings(BaseSettings):
         return self.database_url.startswith("sqlite")
 
     @property
+    def r2_endpoint_url(self) -> str:
+        """The R2 S3 endpoint. An explicit R2_ENDPOINT wins; otherwise it is
+        derived from R2_ACCOUNT_ID (Cloudflare's form is
+        ``https://<account-id>.r2.cloudflarestorage.com``) so setting the
+        account id alone is enough — a missing endpoint is a common reason
+        storage silently falls back to local."""
+        if self.r2_endpoint:
+            return self.r2_endpoint.rstrip("/")
+        if self.r2_account_id:
+            return f"https://{self.r2_account_id}.r2.cloudflarestorage.com"
+        return ""
+
+    @property
     def effective_storage(self) -> str:
         if self.storage_backend:
             return self.storage_backend
-        if self.r2_access_key_id and self.r2_secret_access_key and self.r2_endpoint:
+        if self.r2_access_key_id and self.r2_secret_access_key and self.r2_endpoint_url:
             return "r2"
         return "local"
 
