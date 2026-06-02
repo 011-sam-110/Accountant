@@ -1,19 +1,28 @@
 """Outbound channels for reminders + login codes.
 
-Console by default (prints to the server log so dev works with no provider);
-Resend for email and Twilio for SMS in prod. Functions return True only on a
-confirmed send, so the reminder log can be committed *after* success (at-least-
-once idempotency — plan §7).
+Console by default (prints to stdout so dev — and a no-provider Vercel deploy —
+works without Resend/Twilio: the sign-in code shows up in the Vercel runtime
+logs). Resend for email and Twilio for SMS in prod. Functions return True only
+on a confirmed send, so the reminder log can be committed *after* success
+(at-least-once idempotency — plan §7).
 """
 from __future__ import annotations
 
 import logging
+import sys
 
 import httpx
 
 from .config import settings
 
 log = logging.getLogger("mtd.notify")
+
+
+def _console(channel: str, to: str, body: str, subject: str | None = None) -> None:
+    """Print a clearly-delimited block to stdout (shows in Vercel runtime logs)."""
+    head = f"[MTD {channel}] -> {to}" + (f"  |  {subject}" if subject else "")
+    print(f"\n{'=' * 60}\n{head}\n{'-' * 60}\n{body}\n{'=' * 60}\n", flush=True)
+    log.info("%s to %s", channel, to)
 
 
 def send_email(to: str, subject: str, html: str, text: str | None = None) -> bool:
@@ -32,9 +41,8 @@ def send_email(to: str, subject: str, html: str, text: str | None = None) -> boo
         except Exception as exc:  # noqa: BLE001
             log.error("Resend email to %s failed: %s", to, exc)
             return False
-    # console fallback
-    log.info("\n=== EMAIL (console) ===\nTo: %s\nSubject: %s\n\n%s\n=======================",
-             to, subject, text or _strip(html))
+    # console fallback — the sign-in code lands here (and in Vercel logs)
+    _console("EMAIL", to, text or _strip(html), subject)
     return True
 
 
@@ -53,7 +61,7 @@ def send_sms(to: str, body: str) -> bool:
         except Exception as exc:  # noqa: BLE001
             log.error("Twilio SMS to %s failed: %s", to, exc)
             return False
-    log.info("\n=== SMS (console) ===\nTo: %s\n\n%s\n=====================", to, body)
+    _console("SMS", to, body)
     return True
 
 

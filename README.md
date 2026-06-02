@@ -61,13 +61,56 @@ public/             # app.css, app.js, manifest.json, sw.js, vendored htmx/alpin
 vercel.json         # FastAPI as one Function + /public CDN rewrite + daily cron
 ```
 
-## Deploy (Vercel)
+## Deploying to Vercel
 
-Set the production env vars (DATABASE_URL pooled Neon, R2_*, a vision-LLM key,
-RESEND_API_KEY, SECRET_KEY, `DEV_SHOW_OTP=false`) in the Vercel project, run
-Alembic migrations against the **direct** Neon connection from CI, and deploy.
-`vercel.json` already wires the single Function, the `/public` CDN rewrite, and
-the daily reminder cron (`0 7 * * *`).
+`vercel.json` builds `api/index.py` with `@vercel/python` (with
+`includeFiles: ["app/**"]` so the dynamically-imported routers **and** the Jinja
+templates are bundled), serves `/public` from the CDN, and registers the daily
+reminder cron (`0 7 * * *`).
+
+**Deploy:** push to `master` (auto-deploys if the repo is linked) or run
+`vercel` / `vercel --prod`.
+
+**It boots with zero config.** On Vercel the filesystem is read-only except
+`/tmp`, so with no env vars the SQLite DB + receipt storage fall back to `/tmp`
+— the app runs immediately, but `/tmp` is **ephemeral** (data resets on cold
+starts, not shared across instances). For a real deployment set:
+
+| Variable | Why |
+|---|---|
+| `DATABASE_URL` | **Neon** pooled URL: `postgresql+psycopg://USER:PW@ep-xxx-pooler.REGION.aws.neon.tech/DB?sslmode=require`. Without it, data lives in ephemeral `/tmp`. |
+| `SECRET_KEY` | Long random string — signs the session + CSRF cookies. |
+| `ENV` = `production` | Marks prod (also makes cookies `Secure`). |
+| `DEV_SHOW_OTP` = `false` | **Security:** otherwise the 6-digit sign-in code is shown on the login screen to anyone. |
+| `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_ENDPOINT`, `R2_BUCKET` | Cloudflare R2 — receipt photos persist. Without it, uploads fail on the read-only FS. |
+| `GEMINI_API_KEY` (or `OPENAI_API_KEY` / `ANTHROPIC_API_KEY`) | Real receipt OCR instead of the stub. |
+| `RESEND_API_KEY` + a verified `EMAIL_FROM` | Emails the sign-in code + reminders for real (see logging-in below). |
+
+Run Alembic migrations against the **direct** (non-pooled) Neon connection from
+CI for schema changes; `create_all` runs at startup as an idempotent safety net.
+
+### Logging in on the deployed app (without an email provider)
+
+The sign-in flow emails a 6-digit code. Until you wire `RESEND_API_KEY`, the
+"email" is printed to **stdout**, which appears in the **Vercel runtime logs**
+(Dashboard → your deployment → *Logs*, or `vercel logs <deployment-url>`). Look
+for a block like:
+
+```
+============================================================
+[MTD EMAIL] -> you@example.com  |  Your Tidy Books sign-in code
+------------------------------------------------------------
+Your sign-in code is 559246. It expires in 15 minutes.
+============================================================
+```
+
+Enter that code to sign in. (Quick alternative for a private demo: set
+`DEV_SHOW_OTP=true` and the code is shown right on the login screen — but anyone
+could then sign in as any email, so don't leave it on for real use.)
+
+> Note: moving off the `functions` block dropped `maxDuration` to the Hobby
+> default (10s). The stub and typical OCR calls fit; if real OCR ever times out,
+> that's the lever to raise (Pro).
 
 ## Checks
 
