@@ -1,0 +1,59 @@
+{# Inline edit form. Same outer .repeat wrapper as _repeat_row.html.
+   Context: `r`, `categories` (of r.entry_type), `weekdays`. #}
+<div class="repeat" id="repeat-{{ r.id }}">
+  <div class="card stack" style="margin-bottom:0;">
+    <p class="meta">Editing {{ r.student.name if r.student else (r.label or r.vendor or 'this repeat') }}</p>
+
+    <div class="field">
+      <label for="re-amt-{{ r.id }}">Usual amount</label>
+      <input id="re-amt-{{ r.id }}" name="amount" class="input" type="text" inputmode="decimal"
+             value="{{ '%.2f'|format(r.amount_minor / 100) if r.amount_minor else '' }}">
+    </div>
+
+    <div class="field">
+      <label for="re-cat-{{ r.id }}">Category</label>
+      <select id="re-cat-{{ r.id }}" name="category_id" class="input">
+        {% for c in categories %}
+        <option value="{{ c.id }}" {% if c.id == r.category_id %}selected{% endif %}>{{ c.label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="field">
+      <label for="re-cad-{{ r.id }}">How often</label>
+      <select id="re-cad-{{ r.id }}" name="cadence" class="input">
+        <option value="weekly" {% if r.cadence == 'weekly' %}selected{% endif %}>Every week</option>
+        <option value="fortnightly" {% if r.cadence == 'fortnightly' %}selected{% endif %}>Every 2 weeks</option>
+        <option value="monthly" {% if r.cadence == 'monthly' %}selected{% endif %}>Every month</option>
+        <option value="none" {% if r.cadence == 'none' %}selected{% endif %}>No fixed pattern</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label for="re-wd-{{ r.id }}">Usual day</label>
+      <select id="re-wd-{{ r.id }}" name="weekday" class="input">
+        <option value="" {% if r.weekday is none %}selected{% endif %}>Any day</option>
+        {% for i, name in weekdays %}
+        <option value="{{ i }}" {% if i == r.weekday %}selected{% endif %}>{{ name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    {% if r.entry_type == 'income' %}
+    <label class="flex" style="gap:10px;cursor:pointer;">
+      <input type="checkbox" name="default_paid" value="1" {% if r.default_paid %}checked{% endif %}
+             style="width:1.4rem;height:1.4rem;accent-color:var(--green);">
+      <span>Mark it paid when I log it</span>
+    </label>
+    {% endif %}
+
+    <div class="btn-row">
+      <button class="btn btn-secondary" type="button"
+              hx-get="/repeated/{{ r.id }}/row"
+              hx-target="closest .repeat" hx-swap="outerHTML">Cancel</button>
+      <button class="btn btn-primary"
+              hx-post="/repeated/{{ r.id }}" hx-include="closest .repeat"
+              hx-target="closest .repeat" hx-swap="outerHTML">Save</button>
+    </div>
+  </div>
+</div>

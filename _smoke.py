@@ -84,6 +84,54 @@ with TestClient(app) as c:
     r = c.post(f"/records/entry/{e.id}/restore", headers=HX)
     check("POST entry restore", r.status_code == 200)
 
+    # ---- repeats: detect from history, one-tap setup, tap-to-log, edit, archive ----
+    r = c.get("/repeated")
+    check("GET /repeated", r.status_code == 200 and "repeats" in r.text.lower() and 'class="tabbar"' in r.text)
+    check("repeats: suggestions detected from seed",
+          "Spotted in your records" in r.text and ("Sarah" in r.text or "Liam" in r.text))
+
+    with SessionLocal() as s:
+        u = get_user_by_email(s, "demo@example.com"); repo = Repo(s, u.id)
+        sarah = next((st for st in repo.students() if st.name == "Sarah"), None)
+        liam = next((st for st in repo.students() if st.name == "Liam"), None)
+    sarah_id = sarah.id if sarah else ""
+    check("repeats: seeded weekly pupil exists", bool(sarah_id))
+
+    # one-tap set up from a suggestion
+    r = c.post("/repeated/from-suggestion", data={"student_id": sarah_id}, headers=HX)
+    check("POST from-suggestion -> fragment", r.status_code == 200 and no_shell(r.text) and "Sarah" in r.text)
+
+    with SessionLocal() as s:
+        u = get_user_by_email(s, "demo@example.com"); repo = Repo(s, u.id)
+        reps = repo.list_repeats(); rep_id = reps[0].id if reps else ""
+        n_income_before = len(repo.list_entries(entry_type="income"))
+    check("repeats: repeat created from suggestion", bool(rep_id))
+
+    # tap-to-log -> creates a real entry, returns the saved fragment
+    r = c.post(f"/repeated/{rep_id}/log", headers=HX)
+    check("POST repeat log -> saved fragment", r.status_code == 200 and no_shell(r.text) and "saved" in r.text.lower())
+    with SessionLocal() as s:
+        u = get_user_by_email(s, "demo@example.com"); repo = Repo(s, u.id)
+        n_income_after = len(repo.list_entries(entry_type="income"))
+    check("repeat log created exactly one entry", n_income_after == n_income_before + 1)
+
+    # inline edit
+    r = c.get(f"/repeated/{rep_id}/edit", headers=HX)
+    check("GET repeat edit fragment", r.status_code == 200 and no_shell(r.text))
+    r = c.post(f"/repeated/{rep_id}", data={"amount": "40.00", "cadence": "weekly", "weekday": "1", "default_paid": "1"}, headers=HX)
+    check("POST repeat update -> row fragment", r.status_code == 200 and no_shell(r.text))
+
+    # manual create (income, by hand)
+    r = c.post("/repeated", data={"entry_type": "income", "amount": "25.00", "student_name": "Walk-in", "income_category_id": "", "cadence": "weekly", "weekday": "2", "default_paid": "1"}, headers=HX)
+    check("POST repeated manual create -> fragment", r.status_code == 200 and no_shell(r.text))
+
+    # archive (with undo toast) + dismiss a suggestion
+    r = c.post(f"/repeated/{rep_id}/archive", headers={**HX, "hx-target": "closest .repeat"})
+    check("POST repeat archive", r.status_code == 200 and "hx-swap-oob" in r.text)
+    if liam:
+        r = c.post("/repeated/suggestion/dismiss", data={"student_id": liam.id}, headers=HX)
+        check("POST suggestion dismiss", r.status_code == 200 and no_shell(r.text))
+
     # ---- categories create (the swap-fragment bug path) ----
     r = c.post("/categories", data={"label": "Toll roads", "sa103_code": "car_van_travel", "kind": "expense"}, headers=HX)
     check("POST /categories create -> fragment", r.status_code == 200 and no_shell(r.text) and "Toll roads" in r.text)

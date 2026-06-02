@@ -1,0 +1,29 @@
+{# One saved repeat. Same outer .repeat wrapper as _repeat_edit.html so HTMX
+   swaps clean. Context: `r` = models.Repeat. #}
+<div class="repeat" id="repeat-{{ r.id }}">
+  <div class="row" style="align-items:flex-start;">
+    <span class="ico" aria-hidden="true">{{ '↗' if r.entry_type == 'income' else '🧾' }}</span>
+    <span class="grow" style="min-width:0;">
+      <span class="title">{{ r.student.name if r.student else (r.label or r.vendor or 'Repeat') }}</span><br>
+      <span class="sub">
+        {{ r.amount_minor|pounds if r.amount_minor else 'Ask each time' }}
+        {%- if r.cadence and r.cadence != 'none' %} ·
+          {% if r.cadence == 'weekly' %}every week{% elif r.cadence == 'fortnightly' %}every 2 weeks{% elif r.cadence == 'monthly' %}every month{% endif %}
+          {%- if r.weekday is not none and r.cadence in ['weekly', 'fortnightly'] %} · {{ ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'][r.weekday] }}{% endif %}
+        {%- endif %}
+      </span>
+      {% if r.last_logged_on %}<br><span class="sub muted">Last logged {{ r.last_logged_on|nicedate }}{% if r.times_logged %} · {{ r.times_logged }}×{% endif %}</span>{% endif %}
+    </span>
+    <button type="button" class="btn btn-primary" style="width:auto;min-height:48px;padding:0 20px;white-space:nowrap;"
+            hx-post="/repeated/{{ r.id }}/log" hx-target="#screen" hx-swap="innerHTML">＋ Log</button>
+  </div>
+
+  <div class="flex" style="gap:16px;margin-top:6px;">
+    <button class="btn-ghost" style="padding:0;min-height:40px;"
+            hx-get="/repeated/{{ r.id }}/edit"
+            hx-target="closest .repeat" hx-swap="outerHTML">Edit</button>
+    <button class="btn-ghost" style="padding:0;min-height:40px;color:var(--muted);"
+            hx-post="/repeated/{{ r.id }}/archive"
+            hx-target="closest .repeat" hx-swap="outerHTML">Finish / pause</button>
+  </div>
+</div>
