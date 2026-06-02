@@ -15,8 +15,9 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from .config import settings
 from .models import (
-    AppUser, AuditEvent, Base, Category, Entry, OtpCode, Receipt, ReminderLog,
-    Sa103Box, Session as SessionRow, Student, TaxYear,
+    AppUser, AuditEvent, Base, Category, Entry, OtpCode, Receipt, Repeat,
+    RepeatDismissal, ReminderLog, Sa103Box, Session as SessionRow, Student,
+    TaxYear,
 )
 from .sa103 import DEFAULT_CATEGORIES, SA103_BOXES, SA103_BY_CODE
 from .util import new_id, tax_year_bounds, utcnow
@@ -494,3 +495,112 @@ class Repo:
                                obligation=obligation, milestone=milestone, channel=channel))
         self.s.flush()
         return True
+
+    # ------------------------------------------------------- repeats ----
+    def list_repeats(self, *, include_archived: bool = False) -> list[Repeat]:
+        q = select(Repeat).where(Repeat.user_id == self.uid, Repeat.is_deleted.is_(False))
+        if not include_archived:
+            q = q.where(Repeat.is_archived.is_(False))
+        return list(self.s.scalars(
+            q.order_by(Repeat.display_order, Repeat.created_at)).all())
+
+    def get_repeat(self, rid: str) -> Repeat | None:
+        return self.s.scalar(select(Repeat).where(
+            Repeat.id == rid, Repeat.user_id == self.uid, Repeat.is_deleted.is_(False)))
+
+    def create_repeat(self, *, entry_type: str, label: str = "",
+                      amount_minor: int | None = None, category_id: str | None = None,
+                      student_id: str | None = None, vendor: str | None = None,
+                      notes: str | None = None, default_paid: bool = True,
+                      cadence: str = "weekly", weekday: int | None = None) -> Repeat:
+        order = (self.s.scalar(select(func.coalesce(func.max(Repeat.display_order), 0))
+                               .where(Repeat.user_id == self.uid)) or 0) + 1
+        r = Repeat(user_id=self.uid, entry_type=entry_type, label=(label or "").strip(),
+                   amount_minor=amount_minor, category_id=category_id,
+                   student_id=student_id, vendor=(vendor or None),
+                   notes=(notes or None), default_paid=default_paid,
+                   cadence=cadence, weekday=weekday, display_order=order)
+        self.s.add(r)
+        self.s.flush()
+        self.audit("repeat", r.id, "create", {"label": r.label or vendor or ""})
+        return r
+
+    def update_repeat(self, rid: str, **fields) -> Repeat | None:
+        r = self.get_repeat(rid)
+        if not r:
+            return None
+        allowed = {"label", "amount_minor", "category_id", "student_id", "vendor",
+                   "notes", "default_paid", "cadence", "weekday", "display_order",
+                   "is_archived"}
+        diff = {}
+        for k, v in fields.items():
+            if k in allowed and getattr(r, k) != v:
+                diff[k] = v
+                setattr(r, k, v)
+        self.s.flush()
+        if diff:
+            self.audit("repeat", rid, "update", diff)
+        return r
+
+    def archive_repeat(self, rid: str) -> Repeat | None:
+        r = self.get_repeat(rid)
+        if not r:
+            return None
+        r.is_archived = True
+        self.s.flush()
+        self.audit("repeat", rid, "archive", None)
+        return r
+
+    def restore_repeat(self, rid: str) -> Repeat | None:
+        r = self.get_repeat(rid)
+        if not r:
+            return None
+        r.is_archived = False
+        self.s.flush()
+        self.audit("repeat", rid, "restore", None)
+        return r
+
+    def log_repeat(self, rid: str, *, on_date: date | None = None,
+                   amount_minor: int | None = None) -> Entry | None:
+        """Tap-to-log: create a real Entry from a repeat and bump its stats.
+
+        Returns None if the repeat is missing or has no amount to use (the route
+        then sends the user to a prefilled form to type one).
+        """
+        r = self.get_repeat(rid)
+        if not r:
+            return None
+        amt = amount_minor if amount_minor is not None else r.amount_minor
+        if amt is None:
+            return None
+        when = on_date or date.today()
+        e = self.create_entry(
+            entry_type=r.entry_type, entry_date=when, amount_minor=amt,
+            category_id=r.category_id, vendor=r.vendor, student_id=r.student_id,
+            notes=r.notes,
+            is_paid=(r.default_paid if r.entry_type == "income" else None))
+        r.times_logged = (r.times_logged or 0) + 1
+        r.last_logged_on = when
+        self.s.flush()
+        self.audit("repeat", rid, "log", {"entry_id": e.id, "amount_minor": amt})
+        return e
+
+    def student_ids_with_repeat(self) -> set[str]:
+        rows = self.s.execute(select(Repeat.student_id).where(
+            Repeat.user_id == self.uid, Repeat.is_deleted.is_(False),
+            Repeat.student_id.is_not(None))).all()
+        return {r[0] for r in rows}
+
+    # ---- suggestion dismissals ----
+    def dismiss_suggestion(self, kind: str, ref: str) -> None:
+        exists = self.s.scalar(select(RepeatDismissal).where(
+            RepeatDismissal.user_id == self.uid, RepeatDismissal.kind == kind,
+            RepeatDismissal.ref == ref))
+        if not exists:
+            self.s.add(RepeatDismissal(user_id=self.uid, kind=kind, ref=ref))
+            self.s.flush()
+
+    def dismissed_refs(self, kind: str) -> set[str]:
+        rows = self.s.execute(select(RepeatDismissal.ref).where(
+            RepeatDismissal.user_id == self.uid, RepeatDismissal.kind == kind)).all()
+        return {r[0] for r in rows}

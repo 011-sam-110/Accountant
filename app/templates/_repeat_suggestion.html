@@ -1,0 +1,25 @@
+{# One detected-pattern card. Context: `s` = repeats.Suggestion. #}
+<div class="card">
+  <div class="row" style="border:0;padding:0;min-height:auto;align-items:flex-start;">
+    <span class="ico" aria-hidden="true">🚗</span>
+    <span class="grow" style="min-width:0;">
+      <span class="title">{{ s.name }}</span><br>
+      <span class="sub">
+        {% if s.amount_varies %}around {% endif %}{{ s.amount_minor|pounds }} ·
+        {% if s.cadence == 'weekly' and s.weekday is not none %}most {{ s.weekday_name }}s
+        {%- elif s.cadence == 'fortnightly' %}every 2 weeks
+        {%- elif s.cadence == 'monthly' %}monthly
+        {%- else %}{{ s.cadence }}{% endif %} ·
+        seen {{ s.count }}×
+      </span>
+    </span>
+  </div>
+  <div class="btn-row" style="margin-top:10px;">
+    <button type="button" class="btn btn-primary" style="min-height:48px;"
+            hx-post="/repeated/from-suggestion" hx-vars="student_id: '{{ s.student_id }}'"
+            hx-target="#screen" hx-swap="innerHTML">Set up</button>
+    <button type="button" class="btn btn-secondary" style="min-height:48px;"
+            hx-post="/repeated/suggestion/dismiss" hx-vars="student_id: '{{ s.student_id }}'"
+            hx-target="#screen" hx-swap="innerHTML">Not a regular</button>
+  </div>
+</div>

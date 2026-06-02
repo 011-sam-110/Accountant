@@ -1,0 +1,11 @@
+{# Repeat undo toast (mirrors _undo_toast.html).
+   oob=True  -> empties the row (primary swap) + drops the toast into
+                #repeat-toast-slot out-of-band.
+   oob=False -> rendered in place (e.g. the restore confirmation). #}
+<div class="toast"{% if oob %} id="repeat-toast-slot" hx-swap-oob="true"{% endif %} data-autohide>
+  <span class="grow">{{ message }}</span>
+  {% if can_undo %}
+    <button class="undo" hx-post="/repeated/{{ rid }}/restore"
+            hx-target="closest .toast" hx-swap="outerHTML">Undo</button>
+  {% endif %}
+</div>
