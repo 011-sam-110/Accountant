@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}Records — Tidy Books{% endblock %}
+
+{% block screen %}
+<h1 class="h1">Your records</h1>
+
+{# ---- tax-year switcher ---- #}
+{% if tax_years|length > 1 %}
+<div class="chips mb" role="tablist" aria-label="Tax year">
+  {% for ty in tax_years %}
+    <a class="chip {% if ty.id == tax_year.id %}is-on{% endif %}"
+       href="/records/{{ ty.id }}"
+       aria-current="{{ 'page' if ty.id == tax_year.id else 'false' }}">
+      {{ ty.label }}{% if ty.status == 'closed' %} 🔒{% endif %}
+    </a>
+  {% endfor %}
+</div>
+{% endif %}
+
+{# ---- year summary ---- #}
+<div class="card stack">
+  <div class="flex between">
+    <span class="h2" style="margin:0;">{{ tax_year.label }} tax year</span>
+    {% if tax_year.status == 'closed' %}
+      <span class="badge badge-locked">🔒 Closed</span>
+    {% else %}
+      <span class="badge badge-paid">Open</span>
+    {% endif %}
+  </div>
+  <p class="meta" style="margin:0;">6 April {{ tax_year.start_date.year }} → 5 April {{ tax_year.end_date.year }}</p>
+
+  <div class="divider"></div>
+
+  <div class="flex between">
+    <span>Money in</span>
+    <span class="num amt-in">{{ gross_income_minor|signed("income") }} in</span>
+  </div>
+  <div class="flex between">
+    <span>Money out</span>
+    <span class="num amt-out">{{ expense_total_minor|signed("expense") }} out</span>
+  </div>
+  <div class="flex between" style="font-weight:700;">
+    <span>Left over</span>
+    <span class="num {{ 'amt-in' if net_minor >= 0 else 'amt-out' }}">
+      {{ net_minor|signed("income" if net_minor >= 0 else "expense") }}
+    </span>
+  </div>
+  <p class="meta" style="margin:0;">This is your income before tax — just the totals, nothing filed yet.</p>
+</div>
+
+{# ---- months ---- #}
+{% if months %}
+  <h2 class="h2">Month by month</h2>
+  <div class="pill-list">
+    {% for m in months %}
+      <a class="row" href="/records/{{ tax_year.id }}/{{ '%04d-%02d'|format(m.year, m.month) }}">
+        <span class="grow">
+          <span class="title">{{ m.month|monthname }} {{ m.year }}</span><br>
+          <span class="sub">{{ m.count }} {{ 'entry' if m.count == 1 else 'entries' }}</span>
+        </span>
+        <span class="num" style="text-align:right;">
+          <span class="amt-in">{{ m.income_minor|signed("income") }} in</span><br>
+          <span class="amt-out">{{ m.expense_minor|signed("expense") }} out</span>
+        </span>
+        <span class="chev" aria-hidden="true">›</span>
+      </a>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="empty">
+    <div class="ico" aria-hidden="true">📒</div>
+    <h2 class="h2">No entries yet</h2>
+    <p>No entries yet. Tap Capture to add your first one.</p>
+    <a class="btn btn-primary" href="/capture">Capture something</a>
+  </div>
+{% endif %}
+
+{# ---- close the year ---- #}
+{% if tax_year.status == 'open' and months %}
+  <div class="card stack" style="margin-top:16px;" x-data="{ confirming: false }">
+    <div x-show="!confirming">
+      <button class="btn btn-secondary" @click="confirming = true">Close this tax year…</button>
+    </div>
+    <div x-show="confirming" x-cloak class="stack">
+      <p class="lead" style="margin:0;">Ready to close {{ tax_year.label }}?</p>
+      <p class="muted" style="margin:0;">
+        Closing locks the year so it can't change after you hand it over to your
+        accountant. Don't worry — you can still view and export it any time.
+        Only close once you're sure everything for the year is in.
+      </p>
+      <div class="btn-row">
+        <button class="btn btn-ghost" @click="confirming = false">Not yet</button>
+        <button class="btn btn-primary"
+                hx-post="/records/{{ tax_year.id }}/close">Yes, close it</button>
+      </div>
+    </div>
+  </div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,18 @@
+# --- Core web (Python end-to-end, per architecture plan) ---
+fastapi>=0.110
+uvicorn[standard]>=0.29        # local dev server (Vercel provides ASGI in prod)
+jinja2>=3.1                    # server-rendered HTML
+python-multipart>=0.0.9       # form / file uploads
+itsdangerous>=2.2             # signed-cookie sessions + CSRF tokens
+pydantic-settings>=2.2        # env-driven config (fail-loud)
+httpx>=0.27                   # vision-LLM / email / SMS calls
+
+# --- Data layer ---
+sqlalchemy>=2.0.30            # ORM; sqlite locally, Neon Postgres in prod
+psycopg[binary]>=3.1          # Postgres driver (prod DATABASE_URL=postgres://...)
+
+# --- Capture / OCR / export ---
+pillow>=10.3                  # image re-encode + EXIF strip + thumbnails
+reportlab>=4.1               # pure-Python PDF (NOT WeasyPrint — fragile on Lambda)
+openpyxl>=3.1                # Excel export (CSV via stdlib)
+boto3>=1.34                  # Cloudflare R2 presigned PUT/GET (prod storage)

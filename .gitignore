@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual envs
+.venv/
+venv/
+env/
+
+# Secrets / config
+.env
+.env.local
+.env.*.local
+
+# Local dev data (provider fallbacks)
+*.db
+*.sqlite
+*.sqlite3
+local_storage/
+exports_tmp/
+.local_uploads/
+
+# Node (Playwright review tooling only)
+node_modules/
+
+# Review artifacts
+screenshots/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini

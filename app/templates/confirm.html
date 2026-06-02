@@ -1,0 +1,107 @@
+{# Confirm screen — PARTIAL (swapped into #screen). Pre-filled from the OCR
+   read; every field can be corrected. Low-confidence fields get an amber nudge,
+   missing ones are left empty with a "tap to type" hint. One primary action. #}
+
+{% if read_ok %}
+<h1>Here’s what we found — check it’s right.</h1>
+<p class="lead muted" style="margin-top:-4px;">Tap anything to change it, then save.</p>
+{% else %}
+<h1>We kept your photo but couldn’t read it</h1>
+<p class="lead muted" style="margin-top:-4px;">No problem — just pop the details in below.</p>
+{% endif %}
+
+{% if show_thumb and key %}
+<img class="thumb mb" src="{{ media_url(key) }}" alt="Your receipt photo">
+{% endif %}
+
+<form data-numpad>
+  <input type="hidden" name="key" value="{{ key }}">
+  <input type="hidden" name="entry_type" value="expense">
+
+  {# ---- amount (number pad) ---- #}
+  {% set amount_conf = confidence.get('amount', 'high') %}
+  <div class="field {% if amount_conf in ('low', 'missing') %}warn{% endif %}">
+    <label>Amount</label>
+    <div class="amt-display" data-amount-display>£{{ amount_value if amount_value else "0" }}</div>
+    <input type="hidden" name="amount" value="{{ amount_value }}" data-amount-input>
+    {% if amount_error %}
+    <p class="field-flag" role="alert">{{ amount_error }}</p>
+    {% elif amount_conf == 'missing' %}
+    <p class="field-flag">Couldn’t read the amount — tap to type it.</p>
+    {% elif amount_conf == 'low' %}
+    <p class="field-flag">Please check this one.</p>
+    {% endif %}
+    <div class="numpad">
+      <button type="button" data-key="1" onclick="MTD.numpadPress(this)">1</button>
+      <button type="button" data-key="2" onclick="MTD.numpadPress(this)">2</button>
+      <button type="button" data-key="3" onclick="MTD.numpadPress(this)">3</button>
+      <button type="button" data-key="4" onclick="MTD.numpadPress(this)">4</button>
+      <button type="button" data-key="5" onclick="MTD.numpadPress(this)">5</button>
+      <button type="button" data-key="6" onclick="MTD.numpadPress(this)">6</button>
+      <button type="button" data-key="7" onclick="MTD.numpadPress(this)">7</button>
+      <button type="button" data-key="8" onclick="MTD.numpadPress(this)">8</button>
+      <button type="button" data-key="9" onclick="MTD.numpadPress(this)">9</button>
+      <button type="button" data-key="." onclick="MTD.numpadPress(this)">.</button>
+      <button type="button" data-key="0" onclick="MTD.numpadPress(this)">0</button>
+      <button type="button" data-key="back" onclick="MTD.numpadPress(this)" aria-label="Delete">⌫</button>
+    </div>
+  </div>
+
+  {# ---- date (today chip + a real date input to change it) ---- #}
+  {% set date_conf = confidence.get('date', 'high') %}
+  <div class="field {% if date_conf == 'low' %}warn{% endif %}"
+       x-data="{ editing: false }">
+    <label>Date</label>
+    <div class="chips" x-show="!editing">
+      <button type="button" class="chip is-on" @click="editing = true">
+        📅 {{ entry_date|nicedate }}
+      </button>
+      <button type="button" class="chip" @click="editing = true">Change</button>
+    </div>
+    <input type="date" name="entry_date" class="input" value="{{ entry_date|dateinput }}"
+           x-show="editing" x-cloak>
+    {% if date_conf == 'low' %}
+    <p class="field-flag">Please check this one.</p>
+    {% endif %}
+  </div>
+
+  {# ---- category ---- #}
+  {% set cat_conf = confidence.get('category', 'high') %}
+  <div class="field {% if cat_conf == 'low' %}warn{% endif %}">
+    <label for="cat">Category</label>
+    <select id="cat" name="category_id" class="input">
+      {% for c in categories %}
+      <option value="{{ c.id }}" {% if c.id == selected_category_id %}selected{% endif %}>{{ c.label }}</option>
+      {% endfor %}
+    </select>
+    {% if cat_conf == 'low' %}
+    <p class="field-flag">We weren’t sure — please pick the right one.</p>
+    {% endif %}
+  </div>
+
+  {# ---- vendor ---- #}
+  {% set vendor_conf = confidence.get('vendor', 'high') %}
+  <div class="field {% if vendor_conf == 'low' %}warn{% endif %}">
+    <label for="vendor">Who from <span class="muted">(optional)</span></label>
+    <input id="vendor" name="vendor" type="text" class="input"
+           value="{{ vendor }}" placeholder="e.g. Shell, Halfords">
+    {% if vendor_conf == 'low' %}
+    <p class="field-flag">Please check this one.</p>
+    {% endif %}
+  </div>
+
+  {# ---- notes ---- #}
+  <div class="field">
+    <label for="notes">Note <span class="muted">(optional)</span></label>
+    <input id="notes" name="notes" type="text" class="input"
+           placeholder="Anything worth remembering">
+  </div>
+
+  <div class="actionbar">
+    <button type="button" class="btn btn-primary"
+            hx-post="/api/entries"
+            hx-include="closest form"
+            hx-target="#screen"
+            hx-swap="innerHTML">Looks right — save it</button>
+  </div>
+</form>

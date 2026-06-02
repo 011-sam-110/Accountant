@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}Sign in — Tidy Books{% endblock %}
+
+{% block topbar %}
+<header class="topbar">
+  <div class="brand">Tidy Books<small>MTD made simple</small></div>
+</header>
+{% endblock %}
+
+{% block screen %}
+{% if step == "code" %}
+  {# ---- code entry step ---- #}
+  {% if dev_code %}
+  <div class="banner">Dev only — your code is <strong>{{ dev_code }}</strong></div>
+  {% endif %}
+
+  <div class="stack" style="max-width:420px;margin:0 auto;padding:2rem 1rem;">
+    <p class="lead center">Check your inbox</p>
+    <p class="center muted">We've sent a 6-digit code to <strong>{{ email }}</strong>. It may take a moment to arrive.</p>
+
+    {% if error %}
+    <p class="statusline warn" role="alert">{{ error }}</p>
+    {% endif %}
+
+    <div class="field">
+      <label for="code-input">Your 6-digit code</label>
+      <input id="code-input" name="code" type="text"
+             inputmode="numeric" autocomplete="one-time-code"
+             maxlength="6" pattern="[0-9]{6}" class="input"
+             placeholder="123456" autofocus>
+    </div>
+
+    <input type="hidden" name="email" value="{{ email }}">
+
+    <div class="actionbar">
+      <button class="btn btn-primary"
+              hx-post="/verify"
+              hx-include="[name='code'],[name='email']"
+              hx-target="#screen"
+              hx-swap="innerHTML">Sign me in</button>
+    </div>
+
+    <p class="center muted" style="margin-top:1rem;">
+      Wrong address, or code didn't arrive?
+      <button class="btn btn-ghost"
+              hx-post="/login"
+              hx-vals='{"email":"{{ email }}"}'
+              hx-target="#screen"
+              hx-swap="innerHTML"
+              style="display:inline;padding:0;text-decoration:underline;">Send a new code</button>
+    </p>
+  </div>
+
+{% else %}
+  {# ---- email entry step (default) ---- #}
+  <div class="stack" style="max-width:420px;margin:0 auto;padding:2rem 1rem;">
+    <p class="h1 center" style="margin-top:1rem;">Let's get you in</p>
+    <p class="lead center muted">No password to remember — we'll email you a code. Signing in and creating an account are the same simple step.</p>
+
+    {% if error %}
+    <p class="statusline warn" role="alert">{{ error }}</p>
+    {% endif %}
+
+    <div class="field">
+      <label for="email-input">Your email address</label>
+      <input id="email-input" name="email" type="email"
+             inputmode="email" autocomplete="email"
+             class="input" placeholder="you@example.com"
+             value="{{ email_value|default('') }}"
+             autofocus>
+    </div>
+
+    <div class="actionbar">
+      <button class="btn btn-primary"
+              hx-post="/login"
+              hx-include="[name='email']"
+              hx-target="#screen"
+              hx-swap="innerHTML">Send me a code</button>
+    </div>
+
+    <p class="center muted" style="margin-top:1.5rem;font-size:0.9rem;">
+      We'll never share your address. If you don't have an account yet, we'll create one for you automatically.
+    </p>
+  </div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}Add an expense — Tidy Books{% endblock %}
+{% block screen %}
+
+<h1>Add an expense</h1>
+<p class="lead muted" style="margin-top:-4px;">Type it in — same as a scan, just by hand.</p>
+
+<form data-numpad>
+  <input type="hidden" name="entry_type" value="expense">
+
+  {# ---- amount (number pad) ---- #}
+  <div class="field">
+    <label>Amount</label>
+    <div class="amt-display" data-amount-display>£0</div>
+    <input type="hidden" name="amount" value="" data-amount-input>
+    <div class="numpad">
+      <button type="button" data-key="1" onclick="MTD.numpadPress(this)">1</button>
+      <button type="button" data-key="2" onclick="MTD.numpadPress(this)">2</button>
+      <button type="button" data-key="3" onclick="MTD.numpadPress(this)">3</button>
+      <button type="button" data-key="4" onclick="MTD.numpadPress(this)">4</button>
+      <button type="button" data-key="5" onclick="MTD.numpadPress(this)">5</button>
+      <button type="button" data-key="6" onclick="MTD.numpadPress(this)">6</button>
+      <button type="button" data-key="7" onclick="MTD.numpadPress(this)">7</button>
+      <button type="button" data-key="8" onclick="MTD.numpadPress(this)">8</button>
+      <button type="button" data-key="9" onclick="MTD.numpadPress(this)">9</button>
+      <button type="button" data-key="." onclick="MTD.numpadPress(this)">.</button>
+      <button type="button" data-key="0" onclick="MTD.numpadPress(this)">0</button>
+      <button type="button" data-key="back" onclick="MTD.numpadPress(this)" aria-label="Delete">⌫</button>
+    </div>
+  </div>
+
+  {# ---- date (today chip + a real date input to change it) ---- #}
+  <div class="field" x-data="{ editing: false }">
+    <label>Date</label>
+    <div class="chips" x-show="!editing">
+      <button type="button" class="chip is-on" @click="editing = true">
+        📅 {{ entry_date|nicedate }}
+      </button>
+      <button type="button" class="chip" @click="editing = true">Change</button>
+    </div>
+    <input type="date" name="entry_date" class="input" value="{{ entry_date|dateinput }}"
+           x-show="editing" x-cloak>
+  </div>
+
+  {# ---- category ---- #}
+  <div class="field">
+    <label for="cat">Category</label>
+    <select id="cat" name="category_id" class="input">
+      {% for c in categories %}
+      <option value="{{ c.id }}" {% if c.id == selected_category_id %}selected{% endif %}>{{ c.label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  {# ---- vendor ---- #}
+  <div class="field">
+    <label for="vendor">Who from <span class="muted">(optional)</span></label>
+    <input id="vendor" name="vendor" type="text" class="input"
+           placeholder="e.g. Shell, Halfords">
+  </div>
+
+  {# ---- notes ---- #}
+  <div class="field">
+    <label for="notes">Note <span class="muted">(optional)</span></label>
+    <input id="notes" name="notes" type="text" class="input"
+           placeholder="Anything worth remembering">
+  </div>
+
+  <div class="actionbar">
+    <button type="button" class="btn btn-primary"
+            hx-post="/api/entries"
+            hx-include="closest form"
+            hx-target="#screen"
+            hx-swap="innerHTML">Save expense</button>
+  </div>
+</form>
+
+{% endblock %}

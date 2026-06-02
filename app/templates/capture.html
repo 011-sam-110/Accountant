@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Capture — Tidy Books{% endblock %}
+{% block screen %}
+
+<h1>Snap a receipt</h1>
+<p class="lead muted" style="margin-top:-4px;">Take a photo and we’ll fill in the details for you.</p>
+
+{# ---- the heart of the app: one big tap to scan a receipt ---- #}
+<input type="file" accept="image/*" capture="environment"
+       class="visually-hidden" id="receipt" onchange="MTD.scan(this)">
+<label class="btn scan-btn" for="receipt">
+  <span class="ico" aria-hidden="true">📷</span>
+  Scan a receipt
+  <small>Point, tap, done</small>
+</label>
+
+<div id="scanning" class="htmx-indicator" style="justify-content:center;gap:10px;margin-top:14px;color:var(--muted);font-weight:600;">
+  <span class="spinner dark"></span> Reading your receipt…
+</div>
+
+{# ---- the two by-hand routes ---- #}
+<div class="stack mt">
+  <a class="btn btn-secondary" href="/capture/manual">Add an expense by hand</a>
+  <a class="btn btn-secondary" href="/capture/income">Record a payment in</a>
+</div>
+
+{# ---- MTD status line, lazy-loaded so the screen paints instantly ---- #}
+<div class="mt" hx-get="/status/line" hx-trigger="load">
+  <div class="statusline">Checking where you stand…</div>
+</div>
+
+{# ---- recent activity (or a friendly empty hint) ---- #}
+<h2>Recent</h2>
+{% if recent %}
+<div class="pill-list">
+  {% for e in recent %}
+  <a class="row" href="/records/entry/{{ e.id }}">
+    <span class="ico" aria-hidden="true">{{ "↗" if e.entry_type == "income" else "🧾" }}</span>
+    <span class="grow">
+      <span class="title">{{ e.category.label if e.category else ("Payment in" if e.entry_type == "income" else "Expense") }}</span><br>
+      <span class="sub">{{ e.entry_date|nicedate }}{% if e.entry_type == "income" and e.student %} · {{ e.student.name }}{% elif e.vendor %} · {{ e.vendor }}{% endif %}</span>
+    </span>
+    <span class="num {{ 'amt-in' if e.entry_type == 'income' else 'amt-out' }}">{{ e.amount_minor|signed(e.entry_type) }}</span>
+  </a>
+  {% endfor %}
+</div>
+<p class="meta center mt">See everything in <a href="/records">your records</a>.</p>
+{% else %}
+<div class="empty">
+  <div class="ico" aria-hidden="true">🌱</div>
+  <p>Nothing logged yet — your first receipt goes here.</p>
+</div>
+{% endif %}
+
+{% endblock %}

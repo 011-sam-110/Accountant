@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}Your tax status — Tidy Books{% endblock %}
+
+{% block screen %}
+<h1 class="h1">Where you stand</h1>
+
+{# ---- the reassuring headline banner ---- #}
+<div class="statusline{% if st.tone == 'warn' %} warn{% endif %}" style="margin-bottom:16px;">
+  <span class="ico" aria-hidden="true">{{ "👀" if st.tone == "warn" else "✓" }}</span>
+  <span>{{ st.headline }}</span>
+</div>
+
+{# ---- progress toward the line (numbers ALWAYS, never colour-only) ---- #}
+<div class="card stack">
+  <div class="flex between">
+    <span class="h2" style="margin:0;">Your turnover so far</span>
+    <span class="badge {{ 'badge-unpaid' if st.tone == 'warn' else 'badge-paid' }}">
+      {{ st.pct_display }}% of the line
+    </span>
+  </div>
+
+  {% set bar_pct = st.pct_display %}
+  <div aria-hidden="true"
+       style="height:14px;border-radius:999px;background:var(--surface-2, #eef0f2);overflow:hidden;">
+    <div style="height:100%;width:{{ bar_pct }}%;border-radius:999px;
+                background:{{ 'var(--amber-line)' if st.tone == 'warn' else 'var(--green)' }};">
+    </div>
+  </div>
+
+  <div class="flex between">
+    <span>
+      {% if st.state in ['mandated_active', 'mandated_next_year'] and st.prior_income_minor is not none %}
+        Counted ({{ st.prior_year_label }})
+      {% else %}
+        So far this year{% if st.current_year_label %} ({{ st.current_year_label }}){% endif %}
+      {% endif %}
+    </span>
+    <span class="num">
+      {% if st.state in ['mandated_active', 'mandated_next_year'] and st.prior_income_minor is not none %}
+        {{ st.prior_income_minor|pounds }}
+      {% else %}
+        {{ st.income_minor|pounds }}
+      {% endif %}
+    </span>
+  </div>
+  <div class="flex between">
+    <span>The line where the rules change</span>
+    <span class="num">{{ st.threshold_minor|pounds }}</span>
+  </div>
+
+  <div class="divider"></div>
+  <p class="lead" style="margin:0;">{{ st.detail }}</p>
+</div>
+
+{# ---- prior-year context (only when we have a completed year) ---- #}
+{% if st.prior_year_label and st.prior_income_minor is not none
+      and st.state not in ['mandated_active', 'mandated_next_year'] %}
+<p class="meta" style="margin-top:12px;">
+  For reference, your {{ st.prior_year_label }} turnover was
+  {{ st.prior_income_minor|pounds }}. HMRC looks at completed years like this
+  one when deciding the rules — and you're clear.
+</p>
+{% endif %}
+
+{# ---- upcoming deadlines (only when mandation is confirmed) ---- #}
+{% if obligations %}
+<h2 class="h2">Your filing dates</h2>
+<div class="pill-list">
+  {% for ob in obligations %}
+  <div class="row">
+    <span class="ico" aria-hidden="true">{{ "🗓️" if ob.kind == "quarterly" else "🏁" }}</span>
+    <span class="grow">
+      <span class="title">
+        {% if ob.kind == "final" %}Final yearly summary{% else %}3-monthly update ({{ ob.label }}){% endif %}
+      </span><br>
+      <span class="sub">Due {{ ob.due_date|nicedate }}</span>
+    </span>
+    <span class="num" style="text-align:right;">
+      {% if ob.is_past %}
+        <span class="muted">done / passed</span>
+      {% elif ob.days_until == 0 %}
+        <span class="badge badge-unpaid">due today</span>
+      {% else %}
+        in {{ ob.days_until }} {{ "day" if ob.days_until == 1 else "days" }}
+      {% endif %}
+    </span>
+  </div>
+  {% endfor %}
+</div>
+<p class="meta" style="margin-top:10px;">
+  You don't need to remember these — we'll email (and text, if you've turned
+  that on) before each one is due.
+</p>
+{% endif %}
+
+{# ---- reassuring footer + export link ---- #}
+<div class="card stack" style="margin-top:20px;">
+  <p class="lead" style="margin:0;">When you're ready, make a tidy pack for your accountant.</p>
+  <p class="muted" style="margin:0;">
+    Everything you've logged, gathered into one place to hand over. Nothing is
+    filed until you choose to — there's no rush.
+  </p>
+  <a class="btn btn-primary" href="/export">Make a pack for your accountant</a>
+</div>
+
+<p class="meta center mt">Tidy Books keeps watch so you don't have to.</p>
+{% endblock %}

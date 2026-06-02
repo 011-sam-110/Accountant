@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}More{% endblock %}
+{% block screen %}
+<h1>More</h1>
+
+<div class="pill-list mb">
+  <a class="row" href="/export">
+    <span class="ico" aria-hidden="true">📦</span>
+    <span class="grow"><span class="title">Send to your accountant</span><br>
+      <span class="sub">Make a tidy pack of a tax year to hand over</span></span>
+    <span class="chev" aria-hidden="true">›</span>
+  </a>
+  <a class="row" href="/status">
+    <span class="ico" aria-hidden="true">🧭</span>
+    <span class="grow"><span class="title">Your tax status</span><br>
+      <span class="sub">Where you stand with Making Tax Digital</span></span>
+    <span class="chev" aria-hidden="true">›</span>
+  </a>
+  <a class="row" href="/categories">
+    <span class="ico" aria-hidden="true">🏷️</span>
+    <span class="grow"><span class="title">Your categories</span><br>
+      <span class="sub">Rename, reorder, favourite or hide</span></span>
+    <span class="chev" aria-hidden="true">›</span>
+  </a>
+  <a class="row" href="/account">
+    <span class="ico" aria-hidden="true">👤</span>
+    <span class="grow"><span class="title">Your account</span><br>
+      <span class="sub">{{ current_user.email }}</span></span>
+    <span class="chev" aria-hidden="true">›</span>
+  </a>
+  <a class="row" href="/privacy">
+    <span class="ico" aria-hidden="true">🔒</span>
+    <span class="grow"><span class="title">Privacy</span><br>
+      <span class="sub">How your information is kept safe</span></span>
+    <span class="chev" aria-hidden="true">›</span>
+  </a>
+</div>
+
+<p class="meta center">Tidy Books · You can’t break anything here — everything can be undone.</p>
+{% endblock %}

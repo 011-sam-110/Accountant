@@ -1,0 +1,14 @@
+<nav class="tabbar" aria-label="Main">
+  <a class="tab {% if active_tab == 'capture' %}is-active{% endif %}" href="/capture" aria-current="{{ 'page' if active_tab == 'capture' else 'false' }}">
+    <span class="ico" aria-hidden="true">📷</span>
+    <span>Capture</span>
+  </a>
+  <a class="tab {% if active_tab == 'records' %}is-active{% endif %}" href="/records" aria-current="{{ 'page' if active_tab == 'records' else 'false' }}">
+    <span class="ico" aria-hidden="true">📒</span>
+    <span>Records</span>
+  </a>
+  <a class="tab {% if active_tab == 'more' %}is-active{% endif %}" href="/more" aria-current="{{ 'page' if active_tab == 'more' else 'false' }}">
+    <span class="ico" aria-hidden="true">⋯</span>
+    <span>More</span>
+  </a>
+</nav>

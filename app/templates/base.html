@@ -1,0 +1,63 @@
+{% if hx_request %}{# HTMX swap: emit ONLY the screen content, no shell #}{{ self.screen() }}{% else %}<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="csrf-token" content="{{ csrf_token }}">
+  <title>{% block title %}Tidy Books{% endblock %}</title>
+
+  <!-- iOS PWA -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Tidy Books">
+  <meta name="theme-color" content="#1a7a3c">
+  <meta name="format-detection" content="telephone=no">
+  <link rel="manifest" href="/public/manifest.json">
+  <link rel="apple-touch-icon" href="/public/icons/icon-192.png">
+  <link rel="icon" href="/public/icons/icon-192.png">
+
+  <link rel="stylesheet" href="/public/app.css">
+  <script src="/public/vendor/htmx.min.js" defer></script>
+  <script src="/public/vendor/alpine.min.js" defer></script>
+  <script src="/public/app.js" defer></script>
+  <style>
+    .global-busy {
+      position: fixed; left: 50%; bottom: 92px; transform: translateX(-50%);
+      align-items: center; gap: 8px; background: var(--ink); color: #fff;
+      padding: 10px 16px; border-radius: 999px; font-size: 15px; font-weight: 600;
+      box-shadow: var(--shadow); z-index: 50;
+    }
+  </style>
+</head>
+<body hx-indicator="#global-busy">
+  <div class="app">
+    {% block topbar %}
+    <header class="topbar">
+      <div class="brand">Tidy Books<small>MTD made simple</small></div>
+      {% block topbar_action %}{% endblock %}
+    </header>
+    {% endblock %}
+
+    <main id="screen" class="screen {% if not show_tabs|default(true) %}no-tabs{% endif %} {% block screen_class %}{% endblock %}">
+      {% block screen %}{% endblock %}
+    </main>
+
+    {% if show_tabs|default(false) and current_user %}
+      {% include "_nav.html" %}
+    {% endif %}
+  </div>
+
+  <div id="global-busy" class="global-busy htmx-indicator">
+    <span class="spinner"></span> Saving…
+  </div>
+
+  <script>
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", function () {
+        navigator.serviceWorker.register("/public/sw.js").catch(function () {});
+      });
+    }
+  </script>
+</body>
+</html>
+{% endif %}

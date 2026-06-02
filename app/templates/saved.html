@@ -1,0 +1,30 @@
+{# Saved screen — PARTIAL (swapped into #screen). A calm confirmation with a
+   prominent Undo (in case anything was wrong) and clear next steps. #}
+
+<div class="empty">
+  <div class="ico" aria-hidden="true">✅</div>
+  <h1>Saved</h1>
+  <p style="margin-bottom:8px;">That’s logged for {{ entry.entry_date.month|monthname }} {{ entry.entry_date.year }}.</p>
+</div>
+
+<div class="card">
+  <div class="row" style="border:0;padding:0;min-height:auto;">
+    <span class="ico" aria-hidden="true">{{ "↗" if entry.entry_type == "income" else "🧾" }}</span>
+    <span class="grow">
+      <span class="title">{{ entry.category.label if entry.category else ("Payment in" if entry.entry_type == "income" else "Expense") }}</span><br>
+      <span class="sub">
+        {{ entry.entry_date|nicedate }}{% if entry.entry_type == "income" and entry.student %} · {{ entry.student.name }}{% elif entry.vendor %} · {{ entry.vendor }}{% endif %}
+      </span>
+    </span>
+    <span class="num {{ 'amt-in' if entry.entry_type == 'income' else 'amt-out' }}">{{ entry.amount_minor|signed(entry.entry_type) }}</span>
+  </div>
+</div>
+
+<div class="stack mt">
+  <button type="button" class="btn btn-secondary"
+          hx-post="/records/entry/{{ entry.id }}/delete"
+          hx-target="#screen"
+          hx-swap="innerHTML">Undo — that wasn’t right</button>
+  <a class="btn btn-primary" href="/capture">Scan another</a>
+  <a class="btn btn-ghost center" href="/records">See my records</a>
+</div>

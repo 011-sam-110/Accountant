@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}{{ month_num|monthname }} {{ year_num }} — Tidy Books{% endblock %}
+
+{% block screen %}
+<a class="btn-ghost" style="padding:0;" href="/records/{{ tax_year.id }}">‹ Back to {{ tax_year.label }}</a>
+
+<h1 class="h1">{{ month_num|monthname }} {{ year_num }}</h1>
+
+{% if not income and not expense %}
+  <div class="empty">
+    <div class="ico" aria-hidden="true">📅</div>
+    <h2 class="h2">Nothing this month</h2>
+    <p>No entries for {{ month_num|monthname }} {{ year_num }} yet.</p>
+    <a class="btn btn-primary" href="/capture">Capture something</a>
+  </div>
+{% endif %}
+
+{# ---- Money in ---- #}
+{% if income %}
+  <div class="flex between" style="margin-top:8px;">
+    <h2 class="h2" style="margin:0;">Money in</h2>
+    <span class="num amt-in">{{ income_total_minor|signed("income") }} in</span>
+  </div>
+  <div class="stack">
+    {% for entry in income %}
+      {% include "_entry_row.html" %}
+    {% endfor %}
+  </div>
+{% endif %}
+
+{# ---- Money out ---- #}
+{% if expense %}
+  <div class="flex between" style="margin-top:20px;">
+    <h2 class="h2" style="margin:0;">Money out</h2>
+    <span class="num amt-out">{{ expense_total_minor|signed("expense") }} out</span>
+  </div>
+  <div class="stack">
+    {% for entry in expense %}
+      {% include "_entry_row.html" %}
+    {% endfor %}
+  </div>
+{% endif %}
+
+{# Out-of-band landing spot for the "Entry removed / Undo" toast. #}
+<div id="toast-slot"></div>
+{% endblock %}

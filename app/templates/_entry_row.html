@@ -1,0 +1,62 @@
+{# One ledger row. Same outer wrapper as _entry_edit.html so HTMX swaps clean. #}
+<div class="entry" id="entry-{{ entry.id }}">
+  <div class="row" style="align-items:flex-start;">
+    <span class="grow" style="min-width:0;">
+      <span class="title">
+        {% if entry.category %}{{ entry.category.label }}{% else %}Uncategorised{% endif %}
+      </span>
+      <br>
+      <span class="sub">
+        {{ entry.entry_date|nicedate }}
+        {%- if entry.vendor %} · {{ entry.vendor }}{% endif -%}
+        {%- if entry.student %} · {{ entry.student.name }}{% endif -%}
+      </span>
+      {% if entry.notes %}<br><span class="sub">{{ entry.notes }}</span>{% endif %}
+
+      {% if entry.entry_type == "income" %}
+        <br>
+        {% if entry.is_locked %}
+          <span class="badge {{ 'badge-paid' if entry.is_paid else 'badge-unpaid' }}">
+            {{ '✓ Paid' if entry.is_paid else '• Unpaid' }}
+          </span>
+        {% else %}
+          <button class="badge {{ 'badge-paid' if entry.is_paid else 'badge-unpaid' }}"
+                  style="border:none;cursor:pointer;font-family:inherit;margin-top:6px;"
+                  hx-post="/records/entry/{{ entry.id }}/paid"
+                  hx-target="closest .entry" hx-swap="outerHTML"
+                  title="Tap to mark {{ 'unpaid' if entry.is_paid else 'paid' }}">
+            {{ '✓ Paid' if entry.is_paid else '• Mark paid' }}
+          </button>
+        {% endif %}
+      {% endif %}
+    </span>
+
+    <span class="num {{ 'amt-in' if entry.entry_type == 'income' else 'amt-out' }}"
+          style="text-align:right;">
+      {% if entry.entry_type == "income" %}
+        {{ entry.amount_minor|signed("income") }}<br><small class="muted">in</small>
+      {% else %}
+        {{ entry.amount_minor|signed("expense") }}<br><small class="muted">out</small>
+      {% endif %}
+    </span>
+  </div>
+
+  {% if locked_note %}
+    <p class="field-flag">🔒 {{ locked_note }}</p>
+  {% elif flag %}
+    <p class="field-flag">{{ flag }}</p>
+  {% endif %}
+
+  {% if entry.is_locked %}
+    <p class="meta" style="margin:6px 0 0;">🔒 Locked — this year is closed.</p>
+  {% else %}
+    <div class="flex" style="gap:16px;margin-top:6px;">
+      <button class="btn-ghost" style="padding:0;min-height:40px;"
+              hx-get="/records/entry/{{ entry.id }}/edit"
+              hx-target="closest .entry" hx-swap="outerHTML">Edit</button>
+      <button class="btn-ghost" style="padding:0;min-height:40px;color:var(--danger);"
+              hx-post="/records/entry/{{ entry.id }}/delete"
+              hx-target="closest .entry" hx-swap="outerHTML">Remove</button>
+    </div>
+  {% endif %}
+</div>

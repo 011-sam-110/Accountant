@@ -1,0 +1,66 @@
+{#
+  One category row. Modes:
+   * normal      -> the row (with rename / favourite / hide / delete controls)
+   * removed     -> empty body (the row vanishes) + OOB toast into #cat-toast-slot
+   * warn set    -> the row unchanged + an inline warning (e.g. has entries)
+  Outer wrapper .category is the HTMX swap target.
+#}
+{% if removed %}
+  {# Successful delete: replace the row with nothing, drop a toast OOB. #}
+  <div class="toast" id="cat-toast-slot" hx-swap-oob="true">
+    <span class="grow">{{ toast or "Category removed." }}</span>
+  </div>
+{% else %}
+<div class="category" id="category-{{ category.id }}"
+     x-data="{ renaming: false }">
+  <div class="row" style="align-items:center;">
+    <button class="ico"
+            style="background:none;border:none;cursor:pointer;font-size:24px;"
+            hx-post="/categories/{{ category.id }}"
+            hx-vars="is_favourite: '{{ '' if category.is_favourite else '1' }}'"
+            hx-target="closest .category" hx-swap="outerHTML"
+            title="{{ 'Remove favourite' if category.is_favourite else 'Make favourite' }}"
+            aria-label="{{ 'Remove favourite' if category.is_favourite else 'Make favourite' }}">
+      {{ '⭐' if category.is_favourite else '☆' }}
+    </button>
+
+    <span class="grow" style="min-width:0;">
+      <span class="title" x-show="!renaming">
+        {{ category.label }}{% if category.is_hidden %} <span class="muted">(hidden)</span>{% endif %}
+      </span>
+
+      {# inline rename #}
+      <span x-show="renaming" x-cloak class="flex" style="gap:8px;">
+        <input class="input" name="label" type="text" value="{{ category.label }}"
+               style="min-height:44px;"
+               id="rename-{{ category.id }}">
+        <button class="btn btn-primary" style="width:auto;min-height:44px;padding:0 14px;"
+                hx-post="/categories/{{ category.id }}"
+                hx-include="#rename-{{ category.id }}"
+                hx-target="closest .category" hx-swap="outerHTML">Save</button>
+        <button class="btn btn-secondary" style="width:auto;min-height:44px;padding:0 14px;"
+                type="button" @click="renaming = false">Cancel</button>
+      </span>
+    </span>
+
+    <button class="btn-ghost" style="padding:0 8px;min-height:40px;"
+            x-show="!renaming" @click="renaming = true">Rename</button>
+  </div>
+
+  {% if warn %}
+    <p class="field-flag">{{ warn }}</p>
+  {% endif %}
+
+  <div class="flex" style="gap:16px;margin-top:4px;">
+    <button class="btn-ghost" style="padding:0;min-height:40px;"
+            hx-post="/categories/{{ category.id }}"
+            hx-vars="is_hidden: '{{ '' if category.is_hidden else '1' }}'"
+            hx-target="closest .category" hx-swap="outerHTML">
+      {{ 'Show' if category.is_hidden else 'Hide' }}
+    </button>
+    <button class="btn-ghost" style="padding:0;min-height:40px;color:var(--danger);"
+            hx-post="/categories/{{ category.id }}/delete"
+            hx-target="closest .category" hx-swap="outerHTML">Delete</button>
+  </div>
+</div>
+{% endif %}
