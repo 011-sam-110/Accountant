@@ -86,6 +86,36 @@ starts, not shared across instances). For a real deployment set:
 | `GEMINI_API_KEY` (or `OPENAI_API_KEY` / `ANTHROPIC_API_KEY`) | Real receipt OCR instead of the stub. |
 | `RESEND_API_KEY` + a verified `EMAIL_FROM` | Emails the sign-in code + reminders for real (see logging-in below). |
 
+#### Cloudflare R2 (receipt photos) — common gotchas
+
+Receipts upload **straight from the phone to R2** via a presigned PUT, so two
+things must *both* be true or photos fail silently and nothing reaches the bucket:
+
+1. **Set the `R2_*` vars in the Vercel project** (Settings → Environment Variables),
+   then redeploy — a local `.env` is never uploaded to Vercel. You can set either
+   `R2_ENDPOINT` (`https://<account-id>.r2.cloudflarestorage.com`) **or** just
+   `R2_ACCOUNT_ID` (the endpoint is derived from it). The R2 API **token must have
+   read+write on the exact bucket named in `R2_BUCKET`** — a token scoped to a
+   *different* bucket returns `AccessDenied`.
+2. **Give the bucket a CORS policy** so the browser may PUT from your app's origin
+   (Cloudflare → R2 → your bucket → Settings → CORS Policy):
+
+   ```json
+   [
+     {
+       "AllowedOrigins": ["https://your-app.vercel.app"],
+       "AllowedMethods": ["GET", "PUT"],
+       "AllowedHeaders": ["content-type"],
+       "MaxAgeSeconds": 3600
+     }
+   ]
+   ```
+
+**Verify in one place:** sign in and open `/api/diag`. It reports the selected
+`storage`, the endpoint/bucket it's pointed at, and runs a live server-side
+write/read against R2 (`r2_test`). `ok: true` there means storage works and any
+remaining upload failure is CORS; an error names the real cause.
+
 Run Alembic migrations against the **direct** (non-pooled) Neon connection from
 CI for schema changes; `create_all` runs at startup as an idempotent safety net.
 

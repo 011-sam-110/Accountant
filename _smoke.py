@@ -149,6 +149,15 @@ with TestClient(app) as c:
     r = c.get(f"/export/file/{ty.id}")
     check("GET export file is zip", r.status_code == 200 and r.headers.get("content-type", "").startswith("application/zip") and len(r.content) > 500)
 
+    # ---- diagnostics self-report: storage detail present; R2 round-trip
+    #      correctly SKIPPED in local mode (must never touch R2 here) ----
+    r = c.get("/api/diag")
+    d = r.json() if r.status_code == 200 else {}
+    check("GET /api/diag (local: r2 detail, no live test)",
+          r.status_code == 200 and d.get("storage") == "local"
+          and d.get("r2", {}).get("selected") is False and "r2_test" not in d,
+          f"status={r.status_code} body={d}")
+
     # ---- cron reminders (idempotent) ----
     r = c.post("/api/cron/reminders"); check("POST cron", r.status_code == 200)
 
