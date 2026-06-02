@@ -51,6 +51,7 @@ class Settings(BaseSettings):
     # --- OCR ---
     ocr_provider: str = ""  # "stub" | "gemini" | "openai" | "anthropic" | "" (auto)
     gemini_api_key: str = ""
+    gemini_model: str = "gemini-2.5-flash"  # env GEMINI_MODEL (change if 404s)
     openai_api_key: str = ""
     anthropic_api_key: str = ""
 
