@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import base64
 import json
+import logging
 import random
 from dataclasses import dataclass, field
 from datetime import date, timedelta
@@ -21,6 +22,8 @@ import httpx
 from .config import settings
 from .sa103 import OCR_CATEGORY_GUIDANCE, OCR_EXPENSE_CODES
 from .util import parse_amount_to_minor, parse_uk_date
+
+log = logging.getLogger("mtd.ocr")
 
 _SYSTEM = (
     "You read a photo of a UK receipt for a self-employed driving instructor and "
@@ -194,6 +197,11 @@ def extract(image_bytes: bytes, content_type: str = "image/jpeg") -> OCRResult:
     try:
         return provider.extract(image_bytes, content_type)
     except Exception as exc:  # noqa: BLE001 — gentle-failure path needs this
+        # Surface the real reason in the logs (e.g. Gemini 400 body) — otherwise
+        # an OCR failure is indistinguishable from a blank receipt.
+        body = getattr(getattr(exc, "response", None), "text", "") or ""
+        log.warning("OCR provider %s failed on %d bytes: %r %s",
+                    provider_name, len(image_bytes or b""), exc, body[:600])
         return OCRResult(ok=False, error=str(exc),
                          confidence={k: "missing" for k in
                                      ("amount", "date", "vendor", "category")})

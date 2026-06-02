@@ -14,12 +14,14 @@ still reaches the confirm screen (just empty) so the user can type the details.
 """
 from __future__ import annotations
 
+import logging
 from datetime import date
 
 from fastapi import APIRouter, Body, Depends, Form, Request
 from sqlalchemy.orm import Session
 
 from .. import ocr
+from ..config import settings
 from ..db import Repo, get_session
 from ..models import AppUser
 from ..ocr import OCRResult
@@ -29,6 +31,7 @@ from ..templating import partial, render
 from ..util import from_minor, new_id, parse_amount_to_minor, parse_uk_date
 
 router = APIRouter()
+log = logging.getLogger("mtd.capture")
 
 
 def _amount_str(amount_minor: int | None) -> str:
@@ -67,16 +70,25 @@ def scan(request: Request, key: str = Form(default=""), failed: str = Form(defau
         try:
             image_bytes = get_storage().get_bytes(key)
             res = ocr.extract(image_bytes)
-        except Exception:
+        except Exception as exc:
             # Couldn't even fetch the bytes — fall back to the gentle empty path.
+            # On Vercel without R2 this is expected: the upload PUT and this /scan
+            # request can land on different ephemeral instances, so /tmp differs.
+            log.warning("scan: could not read %s from %s storage: %r — "
+                        "set R2_* for durable shared storage on serverless.",
+                        key, settings.effective_storage, exc)
             res = OCRResult(ok=False,
                             confidence={k: "missing" for k in
                                         ("amount", "date", "vendor", "category")})
     else:
         # No key (compress/upload failed client-side): empty, gentle-failure.
+        log.info("scan: no key supplied (failed=%s)", failed)
         res = OCRResult(ok=False,
                         confidence={k: "missing" for k in
                                     ("amount", "date", "vendor", "category")})
+    log.info("scan outcome: storage=%s ocr=%s ok=%s empty=%s err=%s",
+             settings.effective_storage, settings.effective_ocr,
+             res.ok, res.empty, res.error)
 
     cats = repo.categories(kind="expense", include_hidden=False)
     selected = next((c for c in cats if c.sa103_code == res.suggested_category), None)
