@@ -12,9 +12,9 @@ import shutil
 from functools import lru_cache
 from pathlib import Path
 
-from .config import ROOT, settings
+from .config import WRITABLE_ROOT, settings
 
-LOCAL_ROOT = ROOT / "local_storage"
+LOCAL_ROOT = WRITABLE_ROOT / "local_storage"
 
 
 class StorageBackend:
