@@ -14,6 +14,7 @@ import base64
 import json
 import logging
 import random
+import re
 from dataclasses import dataclass, field
 from datetime import date, timedelta
 
@@ -24,6 +25,12 @@ from .sa103 import OCR_CATEGORY_GUIDANCE, OCR_EXPENSE_CODES
 from .util import parse_amount_to_minor, parse_uk_date
 
 log = logging.getLogger("mtd.ocr")
+
+
+def _redact(text: str) -> str:
+    """Strip API keys from error/log text — the key rides in the request URL."""
+    text = re.sub(r"key=[A-Za-z0-9_\-]+", "key=REDACTED", text)
+    return re.sub(r"AIza[0-9A-Za-z_\-]{6,}", "AIza…REDACTED", text)
 
 _SYSTEM = (
     "You read a photo of a UK receipt for a self-employed driving instructor and "
@@ -201,9 +208,9 @@ def extract(image_bytes: bytes, content_type: str = "image/jpeg") -> OCRResult:
         # Surface the real reason in the logs (e.g. Gemini 400 body) — otherwise
         # an OCR failure is indistinguishable from a blank receipt.
         body = getattr(getattr(exc, "response", None), "text", "") or ""
-        log.warning("OCR provider %s failed on %d bytes: %r %s",
-                    provider_name, len(image_bytes or b""), exc, body[:600])
-        err = f"{exc}" + (f" | {body[:600]}" if body else "")
+        err = _redact(f"{exc}" + (f" | {body[:600]}" if body else ""))
+        log.warning("OCR provider %s failed on %d bytes: %s",
+                    provider_name, len(image_bytes or b""), err)
         return OCRResult(ok=False, error=err,
                          confidence={k: "missing" for k in
                                      ("amount", "date", "vendor", "category")})
