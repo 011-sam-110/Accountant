@@ -130,6 +130,13 @@ def _normalise(data: dict) -> OCRResult:
         ok=True)
 
 
+def _extract_json(text: str) -> dict:
+    """Parse JSON from a model reply, tolerating ```json fences / surrounding prose."""
+    text = (text or "").strip()
+    m = re.search(r"\{.*\}", text, re.S)  # first {...last }
+    return json.loads(m.group(0) if m else text)
+
+
 # ----------------------------------------------------- real providers ----
 class GeminiOCR:
     MODEL = "gemini-2.5-flash"
@@ -194,7 +201,31 @@ class AnthropicOCR:
         return _normalise(json.loads(r.json()["content"][0]["text"]))
 
 
-_PROVIDERS = {"stub": StubOCR, "gemini": GeminiOCR,
+class GroqOCR:
+    """Groq is OpenAI-compatible. Default to a multimodal Llama 4 model; change
+    via GROQ_MODEL if Groq retires it (see console.groq.com/docs/models)."""
+    URL = "https://api.groq.com/openai/v1/chat/completions"
+    MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"
+
+    def extract(self, image_bytes: bytes, content_type="image/jpeg") -> OCRResult:
+        model = settings.groq_model or self.MODEL
+        b64 = base64.b64encode(image_bytes).decode()
+        r = httpx.post(
+            self.URL,
+            headers={"Authorization": f"Bearer {settings.groq_api_key}"},
+            json={"model": model, "temperature": 0,
+                  "messages": [
+                      {"role": "system", "content": _SYSTEM},
+                      {"role": "user", "content": [
+                          {"type": "text", "text": f"Return ONLY JSON: {_SCHEMA_HINT}"},
+                          {"type": "image_url", "image_url": {
+                              "url": f"data:{content_type};base64,{b64}"}}]}]},
+            timeout=30)
+        r.raise_for_status()
+        return _normalise(_extract_json(r.json()["choices"][0]["message"]["content"]))
+
+
+_PROVIDERS = {"stub": StubOCR, "gemini": GeminiOCR, "groq": GroqOCR,
               "openai": OpenAIOCR, "anthropic": AnthropicOCR}
 
 
