@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}Your Account — Tidy Books{% endblock %}
+
+{% block screen %}
+<div style="max-width:480px;margin:0 auto;padding:1rem 1rem 5rem;">
+
+  <h1 class="h1">Your account</h1>
+
+  {% if saved %}
+  <p class="statusline" role="status" style="margin-bottom:1rem;">Saved ✓</p>
+  {% endif %}
+
+  {# ---- account form region ---- #}
+  <div id="account-form">
+    <div class="card stack">
+      <div class="field">
+        <label for="acct-email">Email address</label>
+        <input id="acct-email" class="input" type="email" value="{{ current_user.email }}" readonly
+               style="background:var(--surface-2,#f5f5f5);color:var(--ink-muted,#555);"
+               aria-describedby="acct-email-hint">
+        <span id="acct-email-hint" class="muted" style="font-size:0.85rem;">Your email is your login — it can't be changed here.</span>
+      </div>
+
+      <div class="field">
+        <label for="acct-name">Display name</label>
+        <input id="acct-name" name="display_name" type="text" class="input"
+               value="{{ current_user.display_name|default('') }}"
+               placeholder="e.g. Jane Smith"
+               autocomplete="name">
+      </div>
+
+      <div class="field">
+        <label for="acct-phone">Mobile number</label>
+        <input id="acct-phone" name="phone" type="tel" class="input"
+               value="{{ current_user.phone or '' }}"
+               placeholder="+44 7700 900000"
+               autocomplete="tel"
+               aria-describedby="acct-phone-hint">
+        <span id="acct-phone-hint" class="muted" style="font-size:0.85rem;">Add your mobile to get urgent deadline reminders by text.</span>
+      </div>
+
+      <fieldset style="border:none;padding:0;margin:0;">
+        <legend class="muted" style="font-size:0.9rem;font-weight:600;margin-bottom:0.5rem;">Notifications</legend>
+
+        <label style="display:flex;align-items:center;gap:0.75rem;padding:0.5rem 0;cursor:pointer;">
+          <input type="checkbox" name="email_opt_in" value="1"
+                 {% if current_user.email_opt_in %}checked{% endif %}
+                 style="width:1.1rem;height:1.1rem;accent-color:var(--green,#1a7a3c);">
+          <span>Email me about important deadlines</span>
+        </label>
+
+        <label style="display:flex;align-items:center;gap:0.75rem;padding:0.5rem 0;cursor:pointer;">
+          <input type="checkbox" name="sms_opt_in" value="1"
+                 {% if current_user.sms_opt_in %}checked{% endif %}
+                 style="width:1.1rem;height:1.1rem;accent-color:var(--green,#1a7a3c);">
+          <span>Text me reminders (requires mobile number above)</span>
+        </label>
+      </fieldset>
+
+      <div class="btn-row" style="margin-top:0.5rem;">
+        <button class="btn btn-primary"
+                hx-post="/account"
+                hx-include="#account-form input, #account-form select"
+                hx-target="#screen"
+                hx-swap="innerHTML">Save changes</button>
+      </div>
+    </div>
+  </div>
+
+  {# ---- sign out ---- #}
+  <div class="card" style="margin-top:1rem;">
+    <p class="muted" style="margin-bottom:0.75rem;">Signed in as <strong>{{ current_user.email }}</strong></p>
+    <button class="btn btn-secondary"
+            hx-post="/logout"
+            hx-target="#screen">Sign out</button>
+  </div>
+
+  {# ---- delete account (requires Alpine confirm) ---- #}
+  <div class="card" style="margin-top:1rem;" x-data="{ confirming: false }">
+    <p class="muted" style="margin-bottom:0.75rem;font-size:0.9rem;">
+      Deleting your account permanently removes all your data — receipts, entries, and categories. This cannot be undone.
+    </p>
+
+    <div x-show="!confirming">
+      <button class="btn btn-danger" @click="confirming = true">Delete my account…</button>
+    </div>
+
+    <div x-show="confirming" x-cloak style="border-top:1px solid var(--border,#e0e0e0);padding-top:1rem;margin-top:0.5rem;">
+      <p style="font-weight:600;color:var(--red,#c0392b);margin-bottom:0.75rem;">Are you sure? All your data will be deleted forever.</p>
+      <div class="btn-row">
+        <button class="btn btn-ghost" @click="confirming = false">Cancel</button>
+        <button class="btn btn-danger"
+                hx-post="/account/delete"
+                hx-target="#screen">Yes, delete everything</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

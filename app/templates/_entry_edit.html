@@ -1,0 +1,69 @@
+{# Inline edit form. Same outer .entry wrapper as _entry_row.html. #}
+<div class="entry" id="entry-{{ entry.id }}">
+  <div class="card stack" style="margin-bottom:0;">
+    <p class="meta">Editing this {{ 'money in' if entry.entry_type == 'income' else 'money out' }} entry</p>
+
+    <div class="field">
+      <label for="edit-amount-{{ entry.id }}">Amount</label>
+      <input id="edit-amount-{{ entry.id }}" name="amount" class="input"
+             type="text" inputmode="decimal"
+             value="{{ '%.2f'|format(entry.amount_minor / 100) }}">
+    </div>
+
+    <div class="field">
+      <label for="edit-date-{{ entry.id }}">Date</label>
+      <input id="edit-date-{{ entry.id }}" name="entry_date" class="input"
+             type="date" value="{{ entry.entry_date|dateinput }}">
+    </div>
+
+    <div class="field">
+      <label for="edit-cat-{{ entry.id }}">Category</label>
+      <select id="edit-cat-{{ entry.id }}" name="category_id" class="input">
+        {% for c in categories %}
+          <option value="{{ c.id }}" {% if c.id == entry.category_id %}selected{% endif %}>
+            {{ c.label }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="field">
+      <label for="edit-vendor-{{ entry.id }}">Who / where (optional)</label>
+      <input id="edit-vendor-{{ entry.id }}" name="vendor" class="input"
+             type="text" value="{{ entry.vendor or '' }}"
+             placeholder="e.g. Shell, Vodafone">
+    </div>
+
+    <div class="field">
+      <label for="edit-notes-{{ entry.id }}">Note (optional)</label>
+      <textarea id="edit-notes-{{ entry.id }}" name="notes" class="input"
+                rows="2" placeholder="Anything to remember">{{ entry.notes or '' }}</textarea>
+    </div>
+
+    {% if entry.entry_type == "income" %}
+      <div class="field">
+        <label for="edit-student-{{ entry.id }}">Student (optional)</label>
+        <input id="edit-student-{{ entry.id }}" name="student_name" class="input"
+               type="text" value="{{ entry.student.name if entry.student else '' }}"
+               placeholder="e.g. Aisha">
+      </div>
+      <label class="flex" style="gap:10px;cursor:pointer;">
+        <input type="checkbox" name="is_paid" value="1"
+               {% if entry.is_paid %}checked{% endif %}
+               style="width:1.2rem;height:1.2rem;accent-color:var(--green);">
+        <span>This has been paid</span>
+      </label>
+    {% endif %}
+
+    <div class="btn-row">
+      <button class="btn btn-secondary"
+              hx-get="/records/entry/{{ entry.id }}/row"
+              hx-target="closest .entry" hx-swap="outerHTML"
+              type="button">Cancel</button>
+      <button class="btn btn-primary"
+              hx-post="/records/entry/{{ entry.id }}"
+              hx-include="closest .entry"
+              hx-target="closest .entry" hx-swap="outerHTML">Save</button>
+    </div>
+  </div>
+</div>

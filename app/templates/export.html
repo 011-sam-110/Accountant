@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}Send to your accountant — Tidy Books{% endblock %}
+
+{% block screen %}
+<a class="btn-ghost" style="padding:0;" href="/more">‹ Back to More</a>
+<h1 class="h1">Send to your accountant</h1>
+
+<div class="card stack" style="margin-bottom:16px;">
+  <p class="lead" style="margin:0;">Make a tidy pack to email or hand to your accountant.</p>
+  <p class="muted" style="margin:0;">
+    Each pack contains:
+  </p>
+  <ul class="muted" style="margin:0 0 0 1.2em; padding:0; line-height:1.75;">
+    <li><b>PDF summary</b> — income, expenses, net profit, and SA103 box breakdown</li>
+    <li><b>Spreadsheet (Excel + CSV)</b> — every transaction for the year</li>
+    <li><b>Your receipt photos</b> — organised by date and vendor</li>
+    <li><b>README</b> — a plain-English explanation for your accountant</li>
+  </ul>
+</div>
+
+{% if year_rows %}
+  {% for row in year_rows %}
+  <div class="card stack" style="margin-bottom:12px;">
+
+    <div class="flex between" style="align-items:center;">
+      <span class="h2" style="margin:0;">{{ row.ty.label }}</span>
+      {% if row.ty.status == 'closed' %}
+        <span class="badge badge-locked">🔒 Closed</span>
+      {% else %}
+        <span class="badge badge-paid">Open</span>
+      {% endif %}
+    </div>
+
+    <p class="meta" style="margin:0;">
+      {{ row.ty.start_date|nicedate }} — {{ row.ty.end_date|nicedate }}
+    </p>
+
+    <div class="divider"></div>
+
+    <div class="flex between">
+      <span class="muted">Income</span>
+      <span class="num amt-in">{{ row.gross_minor|pounds }}</span>
+    </div>
+    <div class="flex between">
+      <span class="muted">Expenses</span>
+      <span class="num amt-out">{{ row.expense_minor|pounds }}</span>
+    </div>
+    <div class="flex between" style="font-weight:700;">
+      <span>Net</span>
+      <span class="num {{ 'amt-in' if row.net_minor >= 0 else 'amt-out' }}">
+        {% if row.net_minor < 0 %}−{% endif %}{{ row.net_minor|pounds }}
+      </span>
+    </div>
+
+    <div class="divider"></div>
+
+    {# HTMX build button + result slot #}
+    <button class="btn btn-primary"
+            hx-post="/export/{{ row.ty.id }}"
+            hx-target="#export-result-{{ row.ty.id }}"
+            hx-swap="innerHTML"
+            hx-indicator="#export-busy-{{ row.ty.id }}">
+      Make pack
+    </button>
+
+    <p id="export-busy-{{ row.ty.id }}"
+       class="muted htmx-indicator" style="margin:0;font-size:0.9rem;">
+      Building your pack… this takes a few seconds.
+    </p>
+
+    <div id="export-result-{{ row.ty.id }}"></div>
+  </div>
+  {% endfor %}
+
+{% else %}
+  <div class="empty">
+    <div class="ico" aria-hidden="true">📦</div>
+    <h2 class="h2">No tax years yet</h2>
+    <p class="muted">Add some records first and your tax years will appear here.</p>
+    <a class="btn btn-primary" href="/capture">Capture something</a>
+  </div>
+{% endif %}
+
+<p class="meta center" style="margin-top:24px;">
+  Tidy Books · Packs are ready to download as soon as they're built.
+</p>
+{% endblock %}

@@ -1,0 +1,24 @@
+{% if error %}
+  <div class="statusline warn" role="alert" style="margin-top:8px;">
+    <span class="ico">⚠️</span>
+    <span class="grow">{{ error }}</span>
+  </div>
+{% else %}
+  <div class="statusline" role="status" style="margin-top:8px;">
+    <span class="ico">✅</span>
+    <span class="grow">
+      Your pack for <b>{{ tax_year.label }}</b> is ready
+      <span class="muted">({{ size_kb }}&thinsp;KB)</span>
+    </span>
+  </div>
+  <div class="btn-row" style="margin-top:8px;">
+    <a class="btn btn-primary"
+       href="{{ download_url }}"
+       download>
+      Download pack
+    </a>
+  </div>
+  <p class="meta" style="margin:6px 0 0;">
+    Making a new pack replaces this one.
+  </p>
+{% endif %}

@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}Record a payment — Tidy Books{% endblock %}
+{% block screen %}
+
+<h1>Record a payment in</h1>
+<p class="lead muted" style="margin-top:-4px;">Money you’ve taken — a lesson, a block, anything.</p>
+
+{% if amount_error %}
+<p class="statusline warn" role="alert">{{ amount_error }}</p>
+{% endif %}
+
+<form data-numpad>
+  {# ---- amount (number pad) ---- #}
+  <div class="field {% if amount_error %}warn{% endif %}">
+    <label>Amount</label>
+    <div class="amt-display" data-amount-display>£{{ amount_value if amount_value else "0" }}</div>
+    <input type="hidden" name="amount" value="{{ amount_value|default('') }}" data-amount-input>
+    <div class="numpad">
+      <button type="button" data-key="1" onclick="MTD.numpadPress(this)">1</button>
+      <button type="button" data-key="2" onclick="MTD.numpadPress(this)">2</button>
+      <button type="button" data-key="3" onclick="MTD.numpadPress(this)">3</button>
+      <button type="button" data-key="4" onclick="MTD.numpadPress(this)">4</button>
+      <button type="button" data-key="5" onclick="MTD.numpadPress(this)">5</button>
+      <button type="button" data-key="6" onclick="MTD.numpadPress(this)">6</button>
+      <button type="button" data-key="7" onclick="MTD.numpadPress(this)">7</button>
+      <button type="button" data-key="8" onclick="MTD.numpadPress(this)">8</button>
+      <button type="button" data-key="9" onclick="MTD.numpadPress(this)">9</button>
+      <button type="button" data-key="." onclick="MTD.numpadPress(this)">.</button>
+      <button type="button" data-key="0" onclick="MTD.numpadPress(this)">0</button>
+      <button type="button" data-key="back" onclick="MTD.numpadPress(this)" aria-label="Delete">⌫</button>
+    </div>
+  </div>
+
+  {# ---- date (today chip + a real date input to change it) ---- #}
+  <div class="field" x-data="{ editing: false }">
+    <label>Date</label>
+    <div class="chips" x-show="!editing">
+      <button type="button" class="chip is-on" @click="editing = true">
+        📅 {{ entry_date|nicedate }}
+      </button>
+      <button type="button" class="chip" @click="editing = true">Change</button>
+    </div>
+    <input type="date" name="entry_date" class="input" value="{{ entry_date|dateinput }}"
+           x-show="editing" x-cloak>
+  </div>
+
+  {# ---- who paid (free text, with a datalist of known students) ---- #}
+  <div class="field">
+    <label for="student">Who paid <span class="muted">(optional)</span></label>
+    <input id="student" name="student_name" type="text" class="input"
+           list="students" autocomplete="off"
+           value="{{ student_name|default('') }}" placeholder="e.g. Aisha">
+    <datalist id="students">
+      {% for st in students %}
+      <option value="{{ st.name }}"></option>
+      {% endfor %}
+    </datalist>
+  </div>
+
+  {# ---- category ---- #}
+  <div class="field">
+    <label for="cat">Category</label>
+    <select id="cat" name="category_id" class="input">
+      {% for c in categories %}
+      <option value="{{ c.id }}" {% if c.id == selected_category_id %}selected{% endif %}>{{ c.label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  {# ---- paid? toggle (default = paid) ---- #}
+  <div class="field">
+    <label class="flex between" for="is_paid" style="cursor:pointer;">
+      <span>
+        Paid?
+        <span class="sub muted" style="display:block;font-weight:500;">Leave on if the money’s already in.</span>
+      </span>
+      <input id="is_paid" name="is_paid" type="checkbox" checked
+             style="width:28px;height:28px;flex:0 0 auto;accent-color:var(--green);">
+    </label>
+  </div>
+
+  <div class="actionbar">
+    <button type="button" class="btn btn-primary"
+            hx-post="/capture/income"
+            hx-include="closest form"
+            hx-target="#screen"
+            hx-swap="innerHTML">Record payment</button>
+  </div>
+</form>
+
+{% endblock %}

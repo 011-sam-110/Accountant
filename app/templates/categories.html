@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% block title %}Your categories — Tidy Books{% endblock %}
+
+{% block screen %}
+<a class="btn-ghost" style="padding:0;" href="/more">‹ Back to More</a>
+<h1 class="h1">Your categories</h1>
+
+{% if toast %}
+  <div class="statusline" role="status">{{ toast }}</div>
+{% endif %}
+{% if warn %}
+  <div class="statusline warn" role="status"><span class="ico">⚠️</span><span class="grow">{{ warn }}</span></div>
+{% endif %}
+
+<p class="muted">
+  These are just the names you see. Renaming one is cosmetic — it never changes
+  your tax, because each is filed in the right tax box behind the scenes.
+</p>
+
+{# ---- income group ---- #}
+<h2 class="h2">Money in</h2>
+<div class="pill-list">
+  {% for category in income_categories %}
+    {% include "_category_row.html" %}
+  {% else %}
+    <p class="meta">No income categories yet.</p>
+  {% endfor %}
+</div>
+
+{# ---- expense group ---- #}
+<h2 class="h2">Money out</h2>
+<div class="pill-list">
+  {% for category in expense_categories %}
+    {% include "_category_row.html" %}
+  {% else %}
+    <p class="meta">No expense categories yet.</p>
+  {% endfor %}
+</div>
+
+<div class="divider"></div>
+
+{# ---- add a category ---- #}
+<div class="card stack" x-data="{ kind: 'expense' }" id="add-category">
+  <h2 class="h2" style="margin:0;">Add a category</h2>
+
+  <div class="field">
+    <label for="new-label">Name</label>
+    <input id="new-label" name="label" class="input" type="text"
+           placeholder="e.g. Car washing">
+  </div>
+
+  <div class="field">
+    <label>Is this money in or out?</label>
+    <div class="chips">
+      <button type="button" class="chip" :class="{ 'is-on': kind === 'income' }"
+              @click="kind = 'income'">Money in</button>
+      <button type="button" class="chip" :class="{ 'is-on': kind === 'expense' }"
+              @click="kind = 'expense'">Money out</button>
+    </div>
+    <input type="hidden" name="kind" :value="kind">
+  </div>
+
+  <div class="field">
+    <label for="new-box">Which tax box?</label>
+    <select id="new-box" name="sa103_code" class="input" x-show="kind === 'income'">
+      {% for b in income_boxes %}
+        <option value="{{ b.code }}">{{ b.label }}</option>
+      {% endfor %}
+    </select>
+    <select name="sa103_code" class="input" x-show="kind === 'expense'" x-cloak>
+      {% for b in expense_boxes %}
+        <option value="{{ b.code }}">{{ b.label }}</option>
+      {% endfor %}
+    </select>
+    <span class="muted" style="font-size:0.875rem;">We'll file it in the right tax box automatically — pick whichever fits best.</span>
+  </div>
+
+  <button class="btn btn-primary"
+          hx-post="/categories"
+          hx-include="#add-category input, #add-category select"
+          hx-target="#screen" hx-swap="innerHTML">Add category</button>
+</div>
+
+{# ---- merge two categories ---- #}
+<div class="card stack" id="merge-categories">
+  <h2 class="h2" style="margin:0;">Merge two categories</h2>
+  <p class="muted" style="margin:0;">
+    Tidy up duplicates by folding one into another. Their entries move across —
+    nothing is lost. They must be the same kind and tax box.
+  </p>
+
+  <div class="field">
+    <label for="merge-src">Move everything from…</label>
+    <select id="merge-src" name="src_id" class="input">
+      <optgroup label="Money in">
+        {% for c in income_categories %}<option value="{{ c.id }}">{{ c.label }}</option>{% endfor %}
+      </optgroup>
+      <optgroup label="Money out">
+        {% for c in expense_categories %}<option value="{{ c.id }}">{{ c.label }}</option>{% endfor %}
+      </optgroup>
+    </select>
+  </div>
+
+  <div class="field">
+    <label for="merge-dst">…into</label>
+    <select id="merge-dst" name="dst_id" class="input">
+      <optgroup label="Money in">
+        {% for c in income_categories %}<option value="{{ c.id }}">{{ c.label }}</option>{% endfor %}
+      </optgroup>
+      <optgroup label="Money out">
+        {% for c in expense_categories %}<option value="{{ c.id }}">{{ c.label }}</option>{% endfor %}
+      </optgroup>
+    </select>
+  </div>
+
+  <button class="btn btn-secondary"
+          hx-post="/categories/merge"
+          hx-include="#merge-categories select"
+          hx-target="#screen" hx-swap="innerHTML">Merge them</button>
+</div>
+
+<p class="meta center">You can't delete a category that still has entries — move them first.</p>
+
+{# Out-of-band landing spot for the "Category removed" toast. #}
+<div id="cat-toast-slot"></div>
+{% endblock %}

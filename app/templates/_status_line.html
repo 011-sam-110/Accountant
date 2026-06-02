@@ -1,0 +1,6 @@
+{# Lazy-loaded one-liner for the capture home. NOT a full page. #}
+<a href="/status" class="statusline{% if st.tone == 'warn' %} warn{% endif %}"
+   style="text-decoration:none;">
+  <span class="ico" aria-hidden="true">{{ "👀" if st.tone == "warn" else "✓" }}</span>
+  <span>{{ st.headline }}</span>
+</a>

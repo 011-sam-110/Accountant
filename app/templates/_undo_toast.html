@@ -1,0 +1,16 @@
+{#
+  Undo toast. Two modes:
+   * oob=True  -> this body REPLACES the deleted row (so the row disappears),
+                  and the toast is injected out-of-band into #toast-slot.
+   * oob=False -> rendered directly into the target (e.g. capture's #screen).
+  `can_undo` controls whether the Undo button is shown.
+#}
+{% if oob %}{# row target: empty out the row, push toast out-of-band #}{% endif %}
+<div class="toast"{% if oob %} id="toast-slot" hx-swap-oob="true"{% endif %}>
+  <span class="grow">{{ message }}</span>
+  {% if can_undo %}
+    <button class="undo"
+            hx-post="/records/entry/{{ entry_id }}/restore"
+            hx-target="closest .toast" hx-swap="outerHTML">Undo</button>
+  {% endif %}
+</div>

@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Privacy{% endblock %}
+{% block topbar_action %}<a class="btn-ghost" href="/more">Done</a>{% endblock %}
+{% block screen %}
+<h1>Your privacy, in plain English</h1>
+<div class="card stack">
+  <p class="lead">Your records are yours. Here’s how we look after them.</p>
+  <ul style="padding-left: 20px; line-height: 1.7;">
+    <li>Everything is sent securely (encrypted) and stored encrypted.</li>
+    <li>Only you can see your records. Each person’s account is completely separate.</li>
+    <li>Your receipt photos are kept private — never shared, never made public.</li>
+    <li>We keep tax records for about 6 years, because HMRC may need them.</li>
+    <li>We only use the cookies needed to keep you signed in safely.</li>
+    <li>You can download everything, or delete your account and all its data, whenever you like.</li>
+  </ul>
+</div>
+{% if current_user %}
+<div class="card">
+  <h2>Your data</h2>
+  <div class="btn-row">
+    <a class="btn btn-secondary" href="/export">Download my data</a>
+  </div>
+  <div class="mt">
+    <a class="btn btn-danger" href="/account">Delete my account…</a>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
