@@ -25,6 +25,6 @@
           hx-post="/records/entry/{{ entry.id }}/delete"
           hx-target="#screen"
           hx-swap="innerHTML">Undo — that wasn’t right</button>
-  <a class="btn btn-primary" href="/capture">Scan another</a>
+  <a class="btn btn-primary" href="{{ again_href|default('/capture') }}">{{ again_label|default('Scan another') }}</a>
   <a class="btn btn-ghost center" href="/records">See my records</a>
 </div>

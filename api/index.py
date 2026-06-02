@@ -81,8 +81,9 @@ async def not_authenticated(request: Request, exc: NotAuthenticated):
 # (module, friendly name). Foundation modules first, then swarm features.
 ROUTE_MODULES = [
     "app.routes.core", "app.routes.media", "app.routes.auth",
-    "app.routes.capture", "app.routes.records", "app.routes.categories",
-    "app.routes.status", "app.routes.export", "app.routes.cron",
+    "app.routes.capture", "app.routes.records", "app.routes.repeated",
+    "app.routes.categories", "app.routes.status", "app.routes.export",
+    "app.routes.cron",
 ]
 for mod_name in ROUTE_MODULES:
     try:
@@ -150,6 +151,16 @@ def _seed_demo():
         add("expense", "vehicle_costs", 189.00, date(2026, 5, 14), vendor="Kwik Fit", note="Service")
         add("expense", "phone_internet", 32.00, date(2026, 5, 2), vendor="Vodafone")
         add("expense", "advertising_marketing", 45.00, date(2026, 5, 11), vendor="Vistaprint")
+        # --- regular weekly pupils, RELATIVE to today, so the Repeats screen has
+        #     a real recurring schedule to detect (~8 weeks of history each) ---
+        from datetime import timedelta
+        today = date.today()
+        for name, wd, amt in [("Sarah", 0, 30.00), ("Liam", 1, 34.00),
+                              ("Chloe", 3, 36.00), ("Mo", 4, 28.00)]:
+            last = today - timedelta(days=(today.weekday() - wd) % 7)
+            for w in range(8):
+                add("income", "income_lesson", amt, last - timedelta(weeks=w),
+                    student=name, paid=(w != 0))
         # --- prior year 2025/26: a fuller year, nudging toward the line ---
         for m in range(6, 13):
             add("income", "income_lesson", 3200.00, date(2025, m, 12), paid=True)

@@ -274,7 +274,7 @@ select.input {
   left: 0; right: 0; bottom: 0;
   max-width: 480px; margin: 0 auto;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   background: var(--bg);
   border-top: 1px solid var(--line);
   box-shadow: var(--shadow-up);
