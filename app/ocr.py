@@ -128,9 +128,10 @@ class GeminiOCR:
     MODEL = "gemini-2.5-flash"
 
     def extract(self, image_bytes: bytes, content_type="image/jpeg") -> OCRResult:
+        model = settings.gemini_model or self.MODEL
         b64 = base64.b64encode(image_bytes).decode()
         url = (f"https://generativelanguage.googleapis.com/v1beta/models/"
-               f"{self.MODEL}:generateContent?key={settings.gemini_api_key}")
+               f"{model}:generateContent?key={settings.gemini_api_key}")
         body = {
             "system_instruction": {"parts": [{"text": _SYSTEM}]},
             "contents": [{"parts": [
@@ -202,6 +203,7 @@ def extract(image_bytes: bytes, content_type: str = "image/jpeg") -> OCRResult:
         body = getattr(getattr(exc, "response", None), "text", "") or ""
         log.warning("OCR provider %s failed on %d bytes: %r %s",
                     provider_name, len(image_bytes or b""), exc, body[:600])
-        return OCRResult(ok=False, error=str(exc),
+        err = f"{exc}" + (f" | {body[:600]}" if body else "")
+        return OCRResult(ok=False, error=err,
                          confidence={k: "missing" for k in
                                      ("amount", "date", "vendor", "category")})

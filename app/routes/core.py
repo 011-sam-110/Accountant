@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, Request
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
-from ..config import settings
+from ..config import ON_VERCEL, settings
 from ..db import get_session
 from ..models import AppUser
 from ..security import current_user_optional, require_user
@@ -18,6 +18,48 @@ router = APIRouter()
 def healthz():
     return {"ok": True, "env": settings.env, "storage": settings.effective_storage,
             "ocr": settings.effective_ocr, "email": settings.effective_email}
+
+
+@router.get("/api/diag")
+def diag(request: Request, user: AppUser = Depends(require_user)):
+    """Browser-readable diagnostics (login required). Shows the effective
+    providers and runs a LIVE OCR call so the real error (e.g. a Gemini 400/404
+    with its message) is visible without digging through Vercel logs."""
+    import io
+    import sys
+
+    from .. import ocr
+    info = {
+        "env": settings.env,
+        "on_vercel": ON_VERCEL,
+        "python": sys.version.split()[0],
+        "storage": settings.effective_storage,
+        "ocr_provider": settings.effective_ocr,
+        "gemini_model": settings.gemini_model,
+        "email_provider": settings.effective_email,
+        "keys_present": {
+            "gemini": bool(settings.gemini_api_key),
+            "openai": bool(settings.openai_api_key),
+            "anthropic": bool(settings.anthropic_api_key),
+            "r2": bool(settings.r2_access_key_id and settings.r2_secret_access_key
+                       and settings.r2_endpoint),
+            "smtp": bool(settings.mail_server and settings.email_user),
+        },
+        "database": "sqlite" if settings.is_sqlite else "postgres",
+    }
+    try:
+        from PIL import Image
+        buf = io.BytesIO()
+        Image.new("RGB", (96, 96), (250, 248, 244)).save(buf, "JPEG")
+        res = ocr.extract(buf.getvalue())
+        info["ocr_test"] = {
+            "ok": res.ok, "error": res.error,
+            "amount_minor": res.amount_minor, "vendor": res.vendor,
+            "category": res.suggested_category,
+        }
+    except Exception as exc:  # noqa: BLE001
+        info["ocr_test"] = {"exception": repr(exc)}
+    return info
 
 
 @router.get("/")
