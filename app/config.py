@@ -7,13 +7,24 @@ production architecture (Neon + R2 + vision-LLM + Resend/Twilio).
 """
 from __future__ import annotations
 
+import os
 from functools import lru_cache
 from pathlib import Path
 
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # Repo root (…/Accountant). Used for sqlite + local storage paths.
 ROOT = Path(__file__).resolve().parent.parent
+
+# On Vercel the filesystem is read-only except /tmp, so the local sqlite/storage
+# fallbacks live in /tmp there (ephemeral — set DATABASE_URL=Neon + R2 for prod).
+ON_VERCEL = bool(os.getenv("VERCEL"))
+WRITABLE_ROOT = Path("/tmp") if ON_VERCEL else ROOT
+
+
+def _default_database_url() -> str:
+    return f"sqlite:///{(WRITABLE_ROOT / 'local.db').as_posix()}"
 
 
 class Settings(BaseSettings):
@@ -27,7 +38,7 @@ class Settings(BaseSettings):
     base_url: str = "http://127.0.0.1:8000"
 
     # --- database ---
-    database_url: str = f"sqlite:///{(ROOT / 'local.db').as_posix()}"
+    database_url: str = Field(default_factory=_default_database_url)
 
     # --- storage ---
     storage_backend: str = ""  # "local" | "r2" | "" (auto)
