@@ -9,8 +9,14 @@ from __future__ import annotations
 
 import importlib
 import logging
+import os
+import sys
 from datetime import date, timedelta
 from pathlib import Path
+
+# Ensure the project root (parent of api/) is importable. Vercel's function
+# runtime may not place it on sys.path, which would break `import app`.
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
@@ -27,9 +33,12 @@ logging.basicConfig(level=logging.INFO)
 
 app = FastAPI(title="Tidy Books — MTD app", docs_url=None, redoc_url=None)
 
+# Locally we serve /public ourselves. On Vercel it's CDN-served by @vercel/static
+# and is NOT in the function bundle, so only mount when the dir exists (StaticFiles
+# raises on a missing dir, and the FS is read-only there — never mkdir at import).
 PUBLIC_DIR = ROOT / "public"
-PUBLIC_DIR.mkdir(exist_ok=True)
-app.mount("/public", StaticFiles(directory=str(PUBLIC_DIR)), name="public")
+if PUBLIC_DIR.is_dir():
+    app.mount("/public", StaticFiles(directory=str(PUBLIC_DIR)), name="public")
 
 CSRF_EXEMPT_PREFIXES = ("/api/cron",)
 SAFE_METHODS = {"GET", "HEAD", "OPTIONS"}
@@ -83,10 +92,12 @@ for mod_name in ROUTE_MODULES:
     except ModuleNotFoundError as exc:
         if exc.name == mod_name:  # module itself absent (not yet built)
             log.warning("skipped %s (not built yet)", mod_name)
-        else:
-            raise
+        else:  # a dependency of the module is missing — log, don't crash the app
+            log.exception("FAILED importing %s (missing: %s)", mod_name, exc.name)
     except AttributeError:
         log.warning("skipped %s (no `router`)", mod_name)
+    except Exception:  # any other import-time error: log the traceback, keep serving
+        log.exception("FAILED mounting %s", mod_name)
 
 
 @app.exception_handler(404)
@@ -100,7 +111,6 @@ async def not_found(request: Request, exc):
 
 
 # ------------------------------------------------------------- startup ----
-@app.on_event("startup")
 def _startup():
     init_db()
     log.info("storage=%s ocr=%s email=%s sms=%s db=%s",
@@ -148,3 +158,12 @@ def _seed_demo():
         add("expense", "vehicle_costs", 520.00, date(2025, 9, 3), vendor="Halfords")
         s.commit()
         log.info("seeded demo user demo@example.com")
+
+
+# Initialise the DB at import (cold start) so it doesn't depend on the platform
+# honouring ASGI lifespan; guard it so any failure is logged (and visible in the
+# Vercel runtime logs) instead of crashing the whole function opaquely.
+try:
+    _startup()
+except Exception:
+    log.exception("startup (init_db/seed) failed")
