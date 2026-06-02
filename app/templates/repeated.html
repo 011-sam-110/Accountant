@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% block title %}Repeats — Tidy Books{% endblock %}
+{% block screen %}
+
+<h1>Repeats</h1>
+<p class="lead muted" style="margin-top:-4px;">Your regulars — set one up, then it’s one tap to log.</p>
+
+{# ---- suggestions detected from the instructor's own history ---- #}
+{% if suggestions %}
+<h2>Spotted in your records</h2>
+<p class="meta mb">We noticed these regular pupils. Set one up and logging them is one tap from now on.</p>
+<div class="stack mb">
+  {% for s in suggestions %}{% include "_repeat_suggestion.html" %}{% endfor %}
+</div>
+{% endif %}
+
+{# ---- saved repeats ---- #}
+<h2>Your repeats</h2>
+{% if repeats %}
+<div class="pill-list" id="repeat-list">
+  {% for r in repeats %}{% include "_repeat_row.html" %}{% endfor %}
+</div>
+{% else %}
+<div class="empty">
+  <div class="ico" aria-hidden="true">🔁</div>
+  <p>No repeats yet.{% if not suggestions %} Log a few lessons and we’ll spot your regulars here automatically.{% else %} Set up a suggestion above, or add one below.{% endif %}</p>
+</div>
+{% endif %}
+
+{# ---- add by hand ---- #}
+<div class="mt" x-data="{ open: {{ 'true' if open_form else 'false' }}, type: '{{ form_type|default('income') }}' }">
+  <button type="button" class="btn btn-secondary" x-show="!open" @click="open = true">＋ New repeat</button>
+
+  <form data-numpad class="card stack" x-show="open" x-cloak style="margin-top:0;">
+    <input type="hidden" name="entry_type" :value="type">
+
+    <div class="field">
+      <label>Type</label>
+      <div class="chips">
+        <button type="button" class="chip" :class="{ 'is-on': type === 'income' }" @click="type = 'income'">Payment in</button>
+        <button type="button" class="chip" :class="{ 'is-on': type === 'expense' }" @click="type = 'expense'">Expense</button>
+      </div>
+    </div>
+
+    <div class="field {% if form_error %}warn{% endif %}">
+      <label>Usual amount</label>
+      <div class="amt-display" data-amount-display>£{{ form_amount if form_amount else "0" }}</div>
+      <input type="hidden" name="amount" value="{{ form_amount|default('') }}" data-amount-input>
+      <div class="numpad">
+        <button type="button" data-key="1" onclick="MTD.numpadPress(this)">1</button>
+        <button type="button" data-key="2" onclick="MTD.numpadPress(this)">2</button>
+        <button type="button" data-key="3" onclick="MTD.numpadPress(this)">3</button>
+        <button type="button" data-key="4" onclick="MTD.numpadPress(this)">4</button>
+        <button type="button" data-key="5" onclick="MTD.numpadPress(this)">5</button>
+        <button type="button" data-key="6" onclick="MTD.numpadPress(this)">6</button>
+        <button type="button" data-key="7" onclick="MTD.numpadPress(this)">7</button>
+        <button type="button" data-key="8" onclick="MTD.numpadPress(this)">8</button>
+        <button type="button" data-key="9" onclick="MTD.numpadPress(this)">9</button>
+        <button type="button" data-key="." onclick="MTD.numpadPress(this)">.</button>
+        <button type="button" data-key="0" onclick="MTD.numpadPress(this)">0</button>
+        <button type="button" data-key="back" onclick="MTD.numpadPress(this)" aria-label="Delete">⌫</button>
+      </div>
+      {% if form_error %}<p class="field-flag">{{ form_error }}</p>{% endif %}
+    </div>
+
+    {# who: pupil for income, vendor for expense #}
+    <div class="field" x-show="type === 'income'">
+      <label for="r-student">Which pupil</label>
+      <input id="r-student" name="student_name" type="text" class="input" list="r-students"
+             autocomplete="off" placeholder="e.g. Sarah">
+      <datalist id="r-students">
+        {% for st in students %}<option value="{{ st.name }}"></option>{% endfor %}
+      </datalist>
+    </div>
+    <div class="field" x-show="type === 'expense'" x-cloak>
+      <label for="r-vendor">Who from</label>
+      <input id="r-vendor" name="vendor" type="text" class="input" placeholder="e.g. Costa, Shell">
+    </div>
+
+    {# category (one per type; both submit, the server keeps the matching one) #}
+    <div class="field" x-show="type === 'income'">
+      <label for="r-cat-in">Category</label>
+      <select id="r-cat-in" name="income_category_id" class="input">
+        {% for c in income_categories %}
+        <option value="{{ c.id }}" {% if c.id == default_income_cat %}selected{% endif %}>{{ c.label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field" x-show="type === 'expense'" x-cloak>
+      <label for="r-cat-out">Category</label>
+      <select id="r-cat-out" name="expense_category_id" class="input">
+        {% for c in expense_categories %}
+        <option value="{{ c.id }}" {% if c.id == default_expense_cat %}selected{% endif %}>{{ c.label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="field">
+      <label for="r-cad">How often</label>
+      <select id="r-cad" name="cadence" class="input">
+        <option value="weekly">Every week</option>
+        <option value="fortnightly">Every 2 weeks</option>
+        <option value="monthly">Every month</option>
+        <option value="none">No fixed pattern</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label for="r-wd">Usual day <span class="muted">(optional)</span></label>
+      <select id="r-wd" name="weekday" class="input">
+        <option value="">Any day</option>
+        {% for i, name in weekdays %}<option value="{{ i }}">{{ name }}</option>{% endfor %}
+      </select>
+    </div>
+
+    <label class="flex" style="gap:10px;cursor:pointer;" x-show="type === 'income'">
+      <input type="checkbox" name="default_paid" value="1" checked
+             style="width:1.4rem;height:1.4rem;accent-color:var(--green);">
+      <span>Mark it paid when I log it</span>
+    </label>
+
+    <div class="btn-row">
+      <button type="button" class="btn btn-secondary" @click="open = false">Cancel</button>
+      <button type="button" class="btn btn-primary"
+              hx-post="/repeated" hx-include="closest form"
+              hx-target="#screen" hx-swap="innerHTML">Save repeat</button>
+    </div>
+  </form>
+</div>
+
+{% if flash %}
+<div class="toast" data-autohide><span class="grow">✅ {{ flash }}</span></div>
+{% endif %}
+<div id="repeat-toast-slot"></div>
+
+{% endblock %}

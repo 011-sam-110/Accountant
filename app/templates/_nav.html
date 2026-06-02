@@ -7,6 +7,10 @@
     <span class="ico" aria-hidden="true">📒</span>
     <span>Records</span>
   </a>
+  <a class="tab {% if active_tab == 'repeats' %}is-active{% endif %}" href="/repeated" aria-current="{{ 'page' if active_tab == 'repeats' else 'false' }}">
+    <span class="ico" aria-hidden="true">🔁</span>
+    <span>Repeats</span>
+  </a>
   <a class="tab {% if active_tab == 'more' %}is-active{% endif %}" href="/more" aria-current="{{ 'page' if active_tab == 'more' else 'false' }}">
     <span class="ico" aria-hidden="true">⋯</span>
     <span>More</span>

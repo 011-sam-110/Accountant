@@ -145,6 +145,57 @@ class Receipt(Base):
     entry: Mapped["Entry | None"] = relationship(back_populates="receipt")
 
 
+class Repeat(Base):
+    """A saved 'repeated payment' the user taps to log a real Entry.
+
+    Created by hand or accepted from a detected suggestion. Logging a repeat
+    always goes through Repo.create_entry — nothing is ever auto-posted, so the
+    ledger only ever contains entries the instructor actually confirmed. This is
+    a brand-new table (no Entry changes), so create_all builds it on existing
+    databases with no migration.
+    """
+    __tablename__ = "repeat"
+    __table_args__ = (Index("ix_repeat_user", "user_id"),)
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=new_id)
+    user_id: Mapped[str] = mapped_column(ForeignKey("app_user.id"), index=True)
+    entry_type: Mapped[str] = mapped_column(String(10), default="income")  # income | expense
+    label: Mapped[str] = mapped_column(String(160), default="")  # optional custom name
+    amount_minor: Mapped[int | None] = mapped_column(BigInteger, nullable=True)  # None = ask each time
+    category_id: Mapped[str | None] = mapped_column(ForeignKey("category.id"), nullable=True)
+    student_id: Mapped[str | None] = mapped_column(ForeignKey("student.id"), nullable=True)
+    vendor: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    default_paid: Mapped[bool] = mapped_column(Boolean, default=True)  # income: mark paid on log
+    cadence: Mapped[str] = mapped_column(String(12), default="weekly")  # weekly|fortnightly|monthly|none
+    weekday: Mapped[int | None] = mapped_column(Integer, nullable=True)  # 0=Mon .. 6=Sun
+    times_logged: Mapped[int] = mapped_column(Integer, default=0)
+    last_logged_on: Mapped[date | None] = mapped_column(Date, nullable=True)
+    display_order: Mapped[int] = mapped_column(Integer, default=0)
+    is_archived: Mapped[bool] = mapped_column(Boolean, default=False)
+    is_deleted: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, onupdate=utcnow)
+
+    category: Mapped["Category | None"] = relationship(lazy="joined")
+    student: Mapped["Student | None"] = relationship(lazy="joined")
+
+
+class RepeatDismissal(Base):
+    """Remembers a 'Not a regular' tap so we stop re-suggesting that pattern."""
+    __tablename__ = "repeat_dismissal"
+    __table_args__ = (
+        UniqueConstraint("user_id", "kind", "ref", name="uq_repeat_dismissal"),
+        Index("ix_repeat_dismissal_user", "user_id"),
+    )
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=new_id)
+    user_id: Mapped[str] = mapped_column(ForeignKey("app_user.id"), index=True)
+    kind: Mapped[str] = mapped_column(String(10))  # "student" (later: "vendor")
+    ref: Mapped[str] = mapped_column(String(160))  # student_id (or normalised vendor)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+
 class OtpCode(Base):
     """Single-use, hashed-at-rest login/recovery code."""
     __tablename__ = "otp_code"

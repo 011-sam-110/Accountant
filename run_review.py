@@ -113,6 +113,20 @@ with sync_playwright() as p:
         except Exception as e:
             ok("inline edit", False, repr(e))
 
+        # repeats — suggestions detected from history + tap-to-log
+        b.goto(BASE + "/repeated", wait_until="networkidle"); b.wait_for_timeout(400)
+        shot(b, "18_repeats")
+        ok("repeats page", "repeat" in b.inner_text("body").lower())
+        try:
+            b.click("button:has-text('Set up')", timeout=4000)
+            b.wait_for_timeout(500); shot(b, "19_repeats_after_setup")
+            b.click("button:has-text('Log')", timeout=4000)
+            b.wait_for_selector("text=Saved", timeout=6000)
+            b.wait_for_timeout(300); shot(b, "20_repeat_logged")
+            ok("repeat set-up + tap-to-log", True)
+        except Exception as e:
+            ok("repeat set-up + tap-to-log", False, repr(e))
+
         # status
         b.goto(BASE + "/status", wait_until="networkidle"); b.wait_for_timeout(400)
         shot(b, "12_status"); ok("status page", "where you stand" in b.inner_text("body").lower() or "£" in b.inner_text("body"))
