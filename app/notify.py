@@ -9,7 +9,9 @@ on a confirmed send, so the reminder log can be committed *after* success
 from __future__ import annotations
 
 import logging
+import smtplib
 import sys
+from email.message import EmailMessage
 
 import httpx
 
@@ -41,9 +43,37 @@ def send_email(to: str, subject: str, html: str, text: str | None = None) -> boo
         except Exception as exc:  # noqa: BLE001
             log.error("Resend email to %s failed: %s", to, exc)
             return False
+    if provider == "smtp":
+        return _send_smtp(to, subject, html, text)
     # console fallback — the sign-in code lands here (and in Vercel logs)
     _console("EMAIL", to, text or _strip(html), subject)
     return True
+
+
+def _send_smtp(to: str, subject: str, html: str, text: str | None = None) -> bool:
+    msg = EmailMessage()
+    msg["From"] = settings.mail_from
+    msg["To"] = to
+    msg["Subject"] = subject
+    msg.set_content(text or _strip(html))
+    msg.add_alternative(html, subtype="html")
+    try:
+        if settings.mail_port == 465:  # implicit TLS
+            with smtplib.SMTP_SSL(settings.mail_server, settings.mail_port, timeout=20) as srv:
+                srv.login(settings.email_user, settings.email_pass)
+                srv.send_message(msg)
+        else:  # STARTTLS (587)
+            with smtplib.SMTP(settings.mail_server, settings.mail_port, timeout=20) as srv:
+                srv.ehlo()
+                srv.starttls()
+                srv.login(settings.email_user, settings.email_pass)
+                srv.send_message(msg)
+        log.info("SMTP email sent to %s via %s", to, settings.mail_server)
+        return True
+    except Exception as exc:  # noqa: BLE001
+        log.error("SMTP email to %s via %s:%s failed: %s",
+                  to, settings.mail_server, settings.mail_port, exc)
+        return False
 
 
 def send_sms(to: str, body: str) -> bool:

@@ -55,9 +55,15 @@ class Settings(BaseSettings):
     anthropic_api_key: str = ""
 
     # --- email ---
-    email_provider: str = ""  # "console" | "resend" | "" (auto)
+    email_provider: str = ""  # "console" | "smtp" | "resend" | "" (auto)
     resend_api_key: str = ""
     email_from: str = "MTD App <noreply@example.com>"
+    # SMTP (e.g. IONOS, Gmail, etc.) — an alternative to Resend.
+    mail_server: str = ""          # env MAIL_SERVER, e.g. smtp.ionos.co.uk
+    mail_port: int = 587           # env MAIL_PORT (587 STARTTLS, 465 SSL)
+    email_user: str = ""           # env EMAIL_USER
+    email_pass: str = ""           # env EMAIL_PASS
+    mail_default_sender: str = ""  # env MAIL_DEFAULT_SENDER, e.g. "JrDev <noreply@jr-dev.uk>"
 
     # --- SMS ---
     sms_provider: str = ""  # "console" | "twilio" | "" (auto)
@@ -104,7 +110,15 @@ class Settings(BaseSettings):
     def effective_email(self) -> str:
         if self.email_provider:
             return self.email_provider
-        return "resend" if self.resend_api_key else "console"
+        if self.mail_server and self.email_user and self.email_pass:
+            return "smtp"
+        if self.resend_api_key:
+            return "resend"
+        return "console"
+
+    @property
+    def mail_from(self) -> str:
+        return self.mail_default_sender or self.email_from or self.email_user
 
     @property
     def effective_sms(self) -> str:
