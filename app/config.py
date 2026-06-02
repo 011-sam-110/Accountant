@@ -49,9 +49,11 @@ class Settings(BaseSettings):
     r2_endpoint: str = ""
 
     # --- OCR ---
-    ocr_provider: str = ""  # "stub" | "gemini" | "openai" | "anthropic" | "" (auto)
+    ocr_provider: str = ""  # "stub"|"gemini"|"groq"|"openai"|"anthropic"|"" (auto)
     gemini_api_key: str = ""
     gemini_model: str = "gemini-2.5-flash"  # env GEMINI_MODEL (change if 404s)
+    groq_api_key: str = ""
+    groq_model: str = "meta-llama/llama-4-scout-17b-16e-instruct"  # env GROQ_MODEL
     openai_api_key: str = ""
     anthropic_api_key: str = ""
 
@@ -101,6 +103,8 @@ class Settings(BaseSettings):
             return self.ocr_provider
         if self.gemini_api_key:
             return "gemini"
+        if self.groq_api_key:
+            return "groq"
         if self.openai_api_key:
             return "openai"
         if self.anthropic_api_key:
