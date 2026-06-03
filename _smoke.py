@@ -176,5 +176,17 @@ with TestClient(app) as c:
     check("from header carries the friendly sender name",
           cfg.from_header.startswith("Tidy Books <") and "@" in cfg.from_header)
 
+    # ---- DB URL normaliser: every Postgres scheme -> installed psycopg3 driver ----
+    from app.db import _normalise_pg_url
+    check("postgres:// -> +psycopg",
+          _normalise_pg_url("postgres://u:p@h/db?sslmode=require")
+          == "postgresql+psycopg://u:p@h/db?sslmode=require")
+    check("postgresql:// -> +psycopg",
+          _normalise_pg_url("postgresql://u:p@h/db") == "postgresql+psycopg://u:p@h/db")
+    check("legacy +psycopg2 -> +psycopg",
+          _normalise_pg_url("postgresql+psycopg2://u:p@h/db") == "postgresql+psycopg://u:p@h/db")
+    check("sqlite URL left untouched",
+          _normalise_pg_url("sqlite:///./x.db") == "sqlite:///./x.db")
+
 print("\n" + ("ALL PASSED" if not fails else f"FAILURES: {fails}"))
 sys.exit(1 if fails else 0)
