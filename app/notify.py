@@ -34,7 +34,7 @@ def send_email(to: str, subject: str, html: str, text: str | None = None) -> boo
             r = httpx.post(
                 "https://api.resend.com/emails",
                 headers={"Authorization": f"Bearer {settings.resend_api_key}"},
-                json={"from": settings.email_from, "to": [to],
+                json={"from": settings.from_header, "to": [to],
                       "subject": subject, "html": html,
                       "text": text or _strip(html)},
                 timeout=15)
@@ -52,7 +52,7 @@ def send_email(to: str, subject: str, html: str, text: str | None = None) -> boo
 
 def _send_smtp(to: str, subject: str, html: str, text: str | None = None) -> bool:
     msg = EmailMessage()
-    msg["From"] = settings.mail_from
+    msg["From"] = settings.from_header
     msg["To"] = to
     msg["Subject"] = subject
     msg.set_content(text or _strip(html))
