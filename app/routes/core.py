@@ -17,8 +17,16 @@ router = APIRouter()
 
 @router.get("/healthz")
 def healthz():
-    return {"ok": True, "env": settings.env, "storage": settings.effective_storage,
-            "ocr": settings.effective_ocr, "email": settings.effective_email}
+    # `ephemeral` is the at-a-glance "is my data actually being kept?" signal:
+    # on Vercel a local-storage or sqlite fallback lives in /tmp and is wiped on
+    # cold starts. Set DATABASE_URL (Neon) for durable users/records and R2_*
+    # for durable receipt photos to flip this to false.
+    ephemeral = ON_VERCEL and (settings.effective_storage == "local" or settings.is_sqlite)
+    return {"ok": True, "env": settings.env,
+            "storage": settings.effective_storage,
+            "database": "sqlite" if settings.is_sqlite else "postgres",
+            "ocr": settings.effective_ocr, "email": settings.effective_email,
+            "ephemeral": ephemeral}
 
 
 def _redact_secrets(text: str) -> str:
