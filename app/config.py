@@ -8,6 +8,7 @@ production architecture (Neon + R2 + vision-LLM + Resend/Twilio).
 from __future__ import annotations
 
 import os
+from email.utils import formataddr, parseaddr
 from functools import lru_cache
 from pathlib import Path
 
@@ -60,7 +61,11 @@ class Settings(BaseSettings):
     # --- email ---
     email_provider: str = ""  # "console" | "smtp" | "resend" | "" (auto)
     resend_api_key: str = ""
-    email_from: str = "MTD App <noreply@example.com>"
+    email_from: str = "Tidy Books <noreply@example.com>"
+    # Friendly name recipients see in their inbox (env EMAIL_FROM_NAME). Applied
+    # on top of whatever address is configured below — most inboxes show this
+    # name, not the address, so it keeps the underlying domain out of sight.
+    email_from_name: str = "Tidy Books"
     # SMTP (e.g. IONOS, Gmail, etc.) — an alternative to Resend.
     mail_server: str = ""          # env MAIL_SERVER, e.g. smtp.ionos.co.uk
     mail_port: int = 587           # env MAIL_PORT (587 STARTTLS, 465 SSL)
@@ -135,8 +140,21 @@ class Settings(BaseSettings):
         return "console"
 
     @property
-    def mail_from(self) -> str:
-        return self.mail_default_sender or self.email_from or self.email_user
+    def from_header(self) -> str:
+        """The full ``From`` header used for every email we send.
+
+        The address comes from whatever the deployment configured
+        (MAIL_DEFAULT_SENDER / EMAIL_FROM / EMAIL_USER); the display name is
+        forced to EMAIL_FROM_NAME ("Tidy Books") so the friendly name always
+        shows in the inbox — even if the address was given with no name, or an
+        old one. Falls back to the configured name/address if either is blank.
+        """
+        raw = (self.mail_default_sender or self.email_from or self.email_user or "").strip()
+        existing_name, addr = parseaddr(raw)
+        name = self.email_from_name.strip() or existing_name
+        if addr and name:
+            return formataddr((name, addr))
+        return addr or raw
 
     @property
     def effective_sms(self) -> str:
