@@ -171,15 +171,18 @@ assertion to `_smoke.py` in the same PR.
 
 ## 7. Conventions & guardrails
 
-- **Python 3.13.** Windows dev host, PowerShell default shell — but code must stay
+- **Python 3.13.** Windows dev host, PowerShell default shell, but code must stay
   cross-platform (it runs on Vercel/Linux). Use `pathlib`, never hard-code path separators.
 - **No build step, ever.** htmx/alpine are vendored in `public/vendor/`. Server-rendered Jinja
   + HTMX partials are the pattern; don't add a bundler or SPA framework.
-- **`config.py` is config, not code** — thresholds, deadlines, provider keys. New tunables go
+- **`config.py` is config, not code:** thresholds, deadlines, provider keys. New tunables go
   there, read from env with a sane local default.
 - **Migrations:** Alembic against the *direct* (non-pooled) Neon URL; `create_all` at startup is
-  the idempotent safety net. A schema change is a high-risk PR — call it out.
+  the idempotent safety net. A schema change is a high-risk PR, so call it out.
 - **Don't commit:** `.env`, `*.db`, `local_storage/`, `screenshots/`, `node_modules/` (all gitignored).
-- Commit only when work is review-clean. End commit messages with the Co-Authored-By trailer.
-- This repo handles real tax data — when unsure about money, tax rules, or tenant scoping,
+- **No en dashes or em dashes** (`–`, `—`) anywhere: prose, code comments, UI copy,
+  docs, or commit messages. Use a comma, colon, parentheses, or a plain hyphen instead.
+- Commit only when work is review-clean. Do **not** add `Co-Authored-By` or any other
+  AI-attribution trailer to commit messages.
+- This repo handles real tax data; when unsure about money, tax rules, or tenant scoping,
   stop and ask rather than guess.
