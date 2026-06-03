@@ -1,4 +1,4 @@
-# Tidy Books — MTD-readiness app for UK driving instructors
+# Tidy Books: MTD-readiness app for UK driving instructors
 
 A mobile-only, installable **PWA** that takes a non-technical UK self-employed
 driving instructor from "shoebox of receipts" to **Making Tax Digital (MTD)
@@ -41,7 +41,7 @@ uvicorn api.index:app --reload
 
 Open **http://127.0.0.1:8000** on a phone-sized viewport. A demo account
 (`demo@example.com`, pre-seeded with two tax years of data) is created on first
-run; sign in with any email — the 6-digit code is shown on screen in dev.
+run; sign in with any email, and the 6-digit code is shown on screen in dev.
 
 ## Project layout
 
@@ -72,17 +72,17 @@ reminder cron (`0 7 * * *`).
 `vercel` / `vercel --prod`.
 
 **It boots with zero config.** On Vercel the filesystem is read-only except
-`/tmp`, so with no env vars the SQLite DB + receipt storage fall back to `/tmp`
-— the app runs immediately, but `/tmp` is **ephemeral** (data resets on cold
+`/tmp`, so with no env vars the SQLite DB + receipt storage fall back to `/tmp`,
+so the app runs immediately, but `/tmp` is **ephemeral** (data resets on cold
 starts, not shared across instances). For a real deployment set:
 
 | Variable | Why |
 |---|---|
 | `DATABASE_URL` | **Neon** pooled URL: `postgresql+psycopg://USER:PW@ep-xxx-pooler.REGION.aws.neon.tech/DB?sslmode=require`. Without it, data lives in ephemeral `/tmp`. |
-| `SECRET_KEY` | Long random string — signs the session + CSRF cookies. |
+| `SECRET_KEY` | Long random string that signs the session + CSRF cookies. |
 | `ENV` = `production` | Marks prod (also makes cookies `Secure`). |
 | `DEV_SHOW_OTP` = `false` | **Security:** otherwise the 6-digit sign-in code is shown on the login screen to anyone. |
-| `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_ENDPOINT`, `R2_BUCKET` | Cloudflare R2 — receipt photos persist. Without it, uploads fail on the read-only FS. |
+| `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_ENDPOINT`, `R2_BUCKET` | Cloudflare R2, so receipt photos persist. Without it, uploads fail on the read-only FS. |
 | `GEMINI_API_KEY` (or `OPENAI_API_KEY` / `ANTHROPIC_API_KEY`) | Real receipt OCR instead of the stub. |
 | `RESEND_API_KEY` + a verified `EMAIL_FROM` | Emails the sign-in code + reminders for real (see logging-in below). |
 
@@ -105,7 +105,7 @@ Your sign-in code is 559246. It expires in 15 minutes.
 ```
 
 Enter that code to sign in. (Quick alternative for a private demo: set
-`DEV_SHOW_OTP=true` and the code is shown right on the login screen — but anyone
+`DEV_SHOW_OTP=true` and the code is shown right on the login screen, but anyone
 could then sign in as any email, so don't leave it on for real use.)
 
 > Note: moving off the `functions` block dropped `maxDuration` to the Hobby
@@ -114,7 +114,7 @@ could then sign in as any email, so don't leave it on for real use.)
 
 ## Checks
 
-- `python _smoke.py` — end-to-end integration test across every slice (asserts
+- `python _smoke.py`: end-to-end integration test across every slice (asserts
   HTMX responses are clean fragments).
-- `python run_review.py` — drives an iPhone-12-emulated Chromium through the whole
+- `python run_review.py`: drives an iPhone-12-emulated Chromium through the whole
   app and screenshots each screen into `screenshots/` (needs `playwright install chromium`).
