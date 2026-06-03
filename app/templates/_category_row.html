@@ -17,7 +17,7 @@
     <button class="ico"
             style="background:none;border:none;cursor:pointer;font-size:24px;"
             hx-post="/categories/{{ category.id }}"
-            hx-vars="is_favourite: '{{ '' if category.is_favourite else '1' }}'"
+            hx-vars="is_favourite: '{{ '0' if category.is_favourite else '1' }}'"
             hx-target="closest .category" hx-swap="outerHTML"
             title="{{ 'Remove favourite' if category.is_favourite else 'Make favourite' }}"
             aria-label="{{ 'Remove favourite' if category.is_favourite else 'Make favourite' }}">
@@ -54,7 +54,7 @@
   <div class="flex" style="gap:16px;margin-top:4px;">
     <button class="btn-ghost" style="padding:0;min-height:40px;"
             hx-post="/categories/{{ category.id }}"
-            hx-vars="is_hidden: '{{ '' if category.is_hidden else '1' }}'"
+            hx-vars="is_hidden: '{{ '0' if category.is_hidden else '1' }}'"
             hx-target="closest .category" hx-swap="outerHTML">
       {{ 'Show' if category.is_hidden else 'Hide' }}
     </button>

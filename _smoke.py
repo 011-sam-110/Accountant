@@ -136,6 +136,18 @@ with TestClient(app) as c:
     r = c.post("/categories", data={"label": "Toll roads", "sa103_code": "car_van_travel", "kind": "expense"}, headers=HX)
     check("POST /categories create -> fragment", r.status_code == 200 and no_shell(r.text) and "Toll roads" in r.text)
 
+    # ---- star / hide toggles must turn BOTH on AND off (regression: empty
+    #      string from the template was collapsed to None, so off never stuck) ----
+    cat_id = re.search(r'id="category-([0-9a-f-]+)"', r.text).group(1)
+    r = c.post(f"/categories/{cat_id}", data={"is_favourite": "1"}, headers=HX)
+    check("star ON -> shows remove-favourite", "Remove favourite" in r.text)
+    r = c.post(f"/categories/{cat_id}", data={"is_favourite": "0"}, headers=HX)
+    check("star OFF -> shows make-favourite", "Make favourite" in r.text)
+    r = c.post(f"/categories/{cat_id}", data={"is_hidden": "1"}, headers=HX)
+    check("hide ON -> marked hidden, offers Show", "(hidden)" in r.text and "Show" in r.text)
+    r = c.post(f"/categories/{cat_id}", data={"is_hidden": "0"}, headers=HX)
+    check("hide OFF -> not hidden, offers Hide", "(hidden)" not in r.text and "Hide" in r.text)
+
     # ---- account save (swap-fragment bug path) ----
     r = c.post("/account", data={"display_name": "Demo Instructor", "phone": "07700900000", "email_opt_in": "1"}, headers=HX)
     check("POST /account save -> fragment", r.status_code == 200 and no_shell(r.text) and "saved" in r.text.lower())
