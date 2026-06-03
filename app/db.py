@@ -41,7 +41,22 @@ def _json_dumps(obj) -> str:
     return json.dumps(obj, default=_json_default)
 
 
-_url = settings.database_url
+def _normalise_pg_url(url: str) -> str:
+    """Force the psycopg3 dialect for any Postgres URL.
+
+    We ship psycopg v3 (`psycopg[binary]`), not psycopg2. SQLAlchemy maps the
+    bare `postgres://` / `postgresql://` schemes (and `+psycopg2`) to the
+    psycopg2 driver, which isn't installed, so it crashes on import in prod.
+    Rewrite the scheme to `postgresql+psycopg://` so the installed driver is
+    used regardless of how DATABASE_URL is written.
+    """
+    for prefix in ("postgresql+psycopg2://", "postgresql://", "postgres://"):
+        if url.startswith(prefix):
+            return "postgresql+psycopg://" + url[len(prefix):]
+    return url
+
+
+_url = _normalise_pg_url(settings.database_url)
 _kwargs: dict = {"pool_pre_ping": True, "future": True, "json_serializer": _json_dumps}
 if _url.startswith("sqlite"):
     _kwargs["connect_args"] = {"check_same_thread": False}
