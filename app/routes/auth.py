@@ -12,6 +12,7 @@ from ..models import (
     AppUser, Category, Entry, OtpCode, Receipt, ReminderLog,
     Session as SessionRow, Student, TaxYear,
 )
+from ..emails import signin_email
 from ..notify import send_email
 from ..security import (
     clear_session, create_otp, current_user_optional, issue_session,
@@ -51,9 +52,8 @@ def login_post(request: Request, email: str = Form(""),
         return partial(request, "login.html", error=msg, step="email",
                        email_value=email)
     code = create_otp(s, email, ip=request.client.host if request.client else None)
-    send_email(email, "Your Tidy Books sign-in code",
-               f"<p>Your sign-in code is <b>{code}</b>. It expires in 15 minutes.</p>"
-               "<p>If you didn't request this, you can ignore it.</p>")
+    html, text = signin_email(code)
+    send_email(email, "Your Tidy Books sign-in code", html, text)
     from ..config import settings  # local import avoids circular at module level
     return partial(request, "login.html", step="code", email=email,
                    dev_code=code if settings.dev_show_otp else None)

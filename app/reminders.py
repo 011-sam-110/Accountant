@@ -22,7 +22,7 @@ from datetime import date
 
 from sqlalchemy import select
 
-from . import tax
+from . import emails, tax
 from .db import Repo, SessionLocal
 from .models import AppUser
 from .notify import send_email, send_sms
@@ -179,7 +179,9 @@ def send_due(s, user: AppUser, today: date) -> dict:
         if item["channel"] == "sms":
             ok = send_sms(user.phone, item["body"])
         else:
-            ok = send_email(user.email, item["subject"], item["body"])
+            ok = send_email(user.email, item["subject"],
+                            emails.reminder_email(item["body"]),
+                            text=item["body"])
 
         if ok and repo.log_reminder(dedupe_key, item["obligation"],
                                     item["milestone"], item["channel"]):
