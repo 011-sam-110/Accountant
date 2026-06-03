@@ -84,13 +84,16 @@ def category_update(category_id: str, request: Request,
                     s: Session = Depends(get_session)):
     repo = Repo(s, user.id)
     fields: dict = {}
-    # A checkbox absent from the form == off; present (any value) == on.
+    # The star / hide toggles send the desired next state explicitly: "1" = on,
+    # "0" = off. (We can't use an empty string for off: FastAPI's Form() treats
+    # an empty value as absent, so the toggle could never be turned back off.)
+    # A field that is None simply wasn't sent (e.g. rename) and is left alone.
     if label is not None and label.strip():
         fields["label"] = label.strip()
     if is_favourite is not None:
-        fields["is_favourite"] = bool(is_favourite)
+        fields["is_favourite"] = is_favourite == "1"
     if is_hidden is not None:
-        fields["is_hidden"] = bool(is_hidden)
+        fields["is_hidden"] = is_hidden == "1"
     if display_order is not None and str(display_order).strip():
         try:
             fields["display_order"] = int(display_order)
