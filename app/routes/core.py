@@ -47,7 +47,7 @@ def _r2_selftest() -> dict:
     key = f"_diag/selftest-{new_id()}.txt"
     try:
         st = get_storage()
-        st.put_bytes(key, b"tidybooks-selftest", "text/plain")
+        st.put_bytes(key, b"easybooks-selftest", "text/plain")
         read_back = st.exists(key)
         try:
             st.delete_prefix(key)  # best-effort cleanup; don't fail the test on it
