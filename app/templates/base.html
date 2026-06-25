@@ -4,12 +4,12 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="csrf-token" content="{{ csrf_token }}">
-  <title>{% block title %}Tidy Books{% endblock %}</title>
+  <title>{% block title %}EasyBooks{% endblock %}</title>
 
   <!-- iOS PWA -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <meta name="apple-mobile-web-app-title" content="Tidy Books">
+  <meta name="apple-mobile-web-app-title" content="EasyBooks">
   <meta name="theme-color" content="#1a7a3c">
   <meta name="format-detection" content="telephone=no">
   <link rel="manifest" href="/public/manifest.json">
@@ -33,7 +33,7 @@
   <div class="app">
     {% block topbar %}
     <header class="topbar">
-      <div class="brand">Tidy Books<small>MTD made simple</small></div>
+      <div class="brand">EasyBooks<small>MTD made simple</small></div>
       {% block topbar_action %}{% endblock %}
     </header>
     {% endblock %}

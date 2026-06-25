@@ -131,7 +131,7 @@ def export_download(
         return Response("Tax year not found.", status_code=404)
 
     data = _get_or_build(repo, user, ty)
-    filename = f"TidyBooks-{ty.label.replace('/', '-')}.zip"
+    filename = f"EasyBooks-{ty.label.replace('/', '-')}.zip"
     return Response(
         content=data,
         media_type="application/zip",

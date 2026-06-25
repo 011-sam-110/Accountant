@@ -27,8 +27,9 @@ exports_tmp/
 # Node (Playwright review tooling only)
 node_modules/
 
-# Review artifacts
-screenshots/
+# Review artifacts (run_review.py writes to ./screenshots at the repo root).
+# Anchored to root so the curated, committed docs/screenshots/ is not ignored.
+/screenshots/
 *.log
 
 # OS

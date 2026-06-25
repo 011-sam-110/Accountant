@@ -42,7 +42,7 @@ _SHELL = Template("""\
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light only">
 <meta name="supported-color-schemes" content="light">
-<title>Tidy Books</title>
+<title>EasyBooks</title>
 <style>
   body { margin:0 !important; padding:0 !important; background:$page; }
   a { color:$green; }
@@ -131,22 +131,22 @@ def signin_email(code: str) -> tuple[str, str]:
     code = str(code)
     content = (
         _h1("Here&rsquo;s your sign-in code")
-        + _p("Pop this code into Tidy Books to finish signing in:")
+        + _p("Pop this code into EasyBooks to finish signing in:")
         + _code_block(code)
         + _p("It expires in 15 minutes.")
         + _p("If you didn&rsquo;t try to sign in, you can ignore this email "
              "&mdash; nothing will happen.")
     )
     html = _shell(
-        preheader="Use this code to finish signing in to Tidy Books.",
+        preheader="Use this code to finish signing in to EasyBooks.",
         content=content,
     )
     text = (
         "Here's your sign-in code\n\n"
         f"Your code is: {code}\n\n"
-        "Enter it in Tidy Books to finish signing in. It expires in 15 minutes.\n\n"
+        "Enter it in EasyBooks to finish signing in. It expires in 15 minutes.\n\n"
         "If you didn't try to sign in, you can ignore this email.\n\n"
-        "— Tidy Books"
+        "— EasyBooks"
     )
     return html, text
 
@@ -160,12 +160,12 @@ def reminder_email(text_body: str) -> str:
     """
     paras = [seg.strip() for seg in text_body.split("\n\n") if seg.strip()]
     body_html = "".join(_p(_html.escape(seg).replace("\n", "<br>")) for seg in paras)
-    content = body_html + _button(settings.base_url, "Open Tidy Books")
+    content = body_html + _button(settings.base_url, "Open EasyBooks")
     # Preview text = first real sentence (skip the "Hi <name>," greeting).
     preheader = paras[1] if len(paras) > 1 else (paras[0] if paras else "")
     return _shell(
         preheader=preheader,
         content=content,
         footer_note=("You're getting this because reminders are switched on. "
-                     "You can turn them off any time in Tidy Books."),
+                     "You can turn them off any time in EasyBooks."),
     )

@@ -61,11 +61,11 @@ class Settings(BaseSettings):
     # --- email ---
     email_provider: str = ""  # "console" | "smtp" | "resend" | "" (auto)
     resend_api_key: str = ""
-    email_from: str = "Tidy Books <noreply@example.com>"
+    email_from: str = "EasyBooks <noreply@example.com>"
     # Friendly name recipients see in their inbox (env EMAIL_FROM_NAME). Applied
     # on top of whatever address is configured below — most inboxes show this
     # name, not the address, so it keeps the underlying domain out of sight.
-    email_from_name: str = "Tidy Books"
+    email_from_name: str = "EasyBooks"
     # SMTP (e.g. IONOS, Gmail, etc.) — an alternative to Resend.
     mail_server: str = ""          # env MAIL_SERVER, e.g. smtp.ionos.co.uk
     mail_port: int = 587           # env MAIL_PORT (587 STARTTLS, 465 SSL)
@@ -145,7 +145,7 @@ class Settings(BaseSettings):
 
         The address comes from whatever the deployment configured
         (MAIL_DEFAULT_SENDER / EMAIL_FROM / EMAIL_USER); the display name is
-        forced to EMAIL_FROM_NAME ("Tidy Books") so the friendly name always
+        forced to EMAIL_FROM_NAME ("EasyBooks") so the friendly name always
         shows in the inbox — even if the address was given with no name, or an
         old one. Falls back to the configured name/address if either is blank.
         """

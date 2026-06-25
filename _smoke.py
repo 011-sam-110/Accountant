@@ -186,15 +186,15 @@ with TestClient(app) as c:
     from app.config import settings as cfg
     se_html, se_text = signin_email("123456")
     check("signin email is a full branded HTML doc",
-          se_html.lstrip().lower().startswith("<!doctype") and "Tidy Books" in se_html)
+          se_html.lstrip().lower().startswith("<!doctype") and "EasyBooks" in se_html)
     check("signin email shows the code (html + text)",
           "123456" in se_html and "123456" in se_text)
     rem_html = reminder_email("Hi Sam,\n\nYour 3-monthly update is due soon.\n")
     check("reminder email is branded with one CTA",
           rem_html.lstrip().lower().startswith("<!doctype")
-          and "Open Tidy Books" in rem_html and cfg.base_url in rem_html)
+          and "Open EasyBooks" in rem_html and cfg.base_url in rem_html)
     check("from header carries the friendly sender name",
-          cfg.from_header.startswith("Tidy Books <") and "@" in cfg.from_header)
+          cfg.from_header.startswith("EasyBooks <") and "@" in cfg.from_header)
 
     # ---- DB URL normaliser: every Postgres scheme -> installed psycopg3 driver ----
     from app.db import _normalise_pg_url

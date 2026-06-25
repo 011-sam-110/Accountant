@@ -31,7 +31,7 @@ from app.util import to_minor
 log = logging.getLogger("mtd")
 logging.basicConfig(level=logging.INFO)
 
-app = FastAPI(title="Tidy Books — MTD app", docs_url=None, redoc_url=None)
+app = FastAPI(title="EasyBooks — MTD app", docs_url=None, redoc_url=None)
 
 # Locally we serve /public ourselves. On Vercel it's CDN-served by @vercel/static
 # and is NOT in the function bundle, so only mount when the dir exists (StaticFiles
