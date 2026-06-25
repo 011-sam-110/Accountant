@@ -1,150 +1,104 @@
-# Tidy Books: MTD-readiness app for UK driving instructors
+<p align="center">
+  <img src="docs/screenshots/hero.png" width="320" alt="EasyBooks capture screen">
+</p>
 
-A mobile-only, installable **PWA** that takes a non-technical UK self-employed
-driving instructor from "shoebox of receipts" to **Making Tax Digital (MTD)
-readiness**. Scan a receipt → the app reads it and suggests a category → tap
-"Looks right" → it's filed into clean, HMRC-shaped records. Built **in Python**
-end-to-end, designed for **iPhone 12 Safari**, multi-user with isolated accounts.
+<h1 align="center">EasyBooks</h1>
+<p align="center">A phone app that turns a driving instructor's shoebox of receipts into clean, tax-ready records.</p>
 
-Built to `architecture-plan.md` / `project-brief (1).md` (read those for the *why*).
+<p align="center">
+  <img src="https://img.shields.io/badge/Python-3.13-3776AB?logo=python&logoColor=white">
+  <img src="https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white">
+  <img src="https://img.shields.io/badge/runs%20with-empty%20.env-success">
+  <img src="https://img.shields.io/badge/no%20build%20step-555">
+</p>
 
-## Stack
+EasyBooks is a mobile-only, installable PWA for UK self-employed driving instructors who are
+not technical. You photograph a receipt, the app reads it and suggests a category, you tap
+"Looks right", and it is filed into clean records mapped to the HMRC SA103 self-employment
+boxes. The whole thing is Python end to end with no build step, and it runs on a laptop with
+an empty `.env` because every cloud dependency has a local fallback.
 
-FastAPI (single ASGI app) · Jinja2 + HTMX + Alpine.js (server-rendered, no build
-step) · hand-written CSS design system · SQLAlchemy 2.0 · reportlab/openpyxl for
-exports. Targets Vercel + Neon Postgres + Cloudflare R2 + a vision-LLM + Resend/
-Twilio in production.
+## ✨ Features
 
-### Runs locally with ZERO credentials
+- **Scan and confirm**: photograph a receipt and a vision-LLM reads the amount, date and vendor and suggests a category; you just tap "Looks right" to file it (`app/ocr.py`).
+- **Runs with no credentials**: an empty `.env` runs the full app on SQLite, the local filesystem, an OCR stub and console email, so it works offline end to end (`app/config.py`).
+- **Plain-English tax status**: entries are mapped to SA103 boxes and turned into a no-jargon view of where you stand against the Making Tax Digital thresholds and quarterly deadlines (`app/sa103.py`, `app/tax.py`).
+- **Accountant pack export**: one tap builds a ZIP containing a PDF summary (reportlab), a spreadsheet (openpyxl) and the receipt images.
+- **Recurring entries**: tap-to-log repeats for regular lessons and costs, with suggestions detected from your own history (`app/routes/repeated.py`).
+- **Multi-user with isolated accounts**: every database query goes through a per-user scoped `Repo`, the app's anti-IDOR backstop (`app/db.py`).
+- **Passwordless sign-in**: a 6-digit code is emailed (or shown on screen in dev) instead of a password (`app/security.py`).
+- **Installable PWA**: a web manifest plus service worker, designed for iPhone 12 Safari, so it adds to the home screen and behaves like an app with no App Store.
 
-Every external dependency degrades to a local fallback, so the app runs end-to-end
-on a laptop with an empty `.env`:
+## 📸 Screenshots
+
+|  |  |
+|---|---|
+| ![Scan and confirm](docs/screenshots/01-scan-confirm.png) <br> *Scan a receipt; the app reads amount, date and vendor* | ![Add by hand](docs/screenshots/02-manual-entry.png) <br> *Or type an expense in by hand* |
+| ![Records](docs/screenshots/03-records.png) <br> *Tidy monthly records, grouped by tax year* | ![Status](docs/screenshots/04-status.png) <br> *Where you stand, in plain English* |
+| ![Export](docs/screenshots/05-export.png) <br> *One-tap pack to send to your accountant* |  |
+
+## 🛠 Stack
+
+Python 3.13 · FastAPI (single ASGI app) · Jinja2 + HTMX + Alpine.js (server-rendered, vendored,
+no bundler) · hand-written CSS · SQLAlchemy 2.0 · reportlab + openpyxl for exports.
+
+Production targets, each with a local fallback so nothing is required to run:
 
 | Concern | Production | Local fallback |
 |---|---|---|
-| Database | Neon Postgres (pooled) | **SQLite** (`./local.db`) |
-| Blob storage | Cloudflare R2 (presigned PUT) | **local filesystem** (`./local_storage`) via `/api/blob` |
-| OCR | Gemini 2.5 Flash (OpenAI/Claude fallbacks) | **stub** (plausible data, exercises the full flow) |
-| Email / SMS | Resend / Twilio | **console** (printed to the server log) |
-| Login code | emailed OTP | shown on-screen (`DEV_SHOW_OTP=true`) |
+| Database | Neon Postgres | SQLite (`./local.db`) |
+| Blob storage | Cloudflare R2 | local filesystem (`./local_storage`) |
+| Receipt OCR | a vision-LLM (Gemini / OpenAI / Claude / Groq) | stub that returns plausible data |
+| Email / SMS | Resend / Twilio | printed to the server log |
 
-Providers auto-select based on which env vars are present (see `app/config.py`).
+The active provider is chosen from whichever env vars are present (`app/config.py`).
 
-## Run it
+## 🚀 Run
 
 ```bash
-python -m venv .venv && . .venv/Scripts/activate      # Windows: .venv\Scripts\activate
+python -m venv .venv && . .venv/Scripts/activate   # Windows cmd: .venv\Scripts\activate
 pip install -r requirements.txt
-# Vendored already, but if public/vendor/*.js is missing, re-fetch htmx + alpine.
 uvicorn api.index:app --reload
 ```
 
 Open **http://127.0.0.1:8000** on a phone-sized viewport. A demo account
-(`demo@example.com`, pre-seeded with two tax years of data) is created on first
-run; sign in with any email, and the 6-digit code is shown on screen in dev.
+(`demo@example.com`, pre-seeded with two tax years of data) is created on first run. Sign in
+with any email; in dev the 6-digit code is shown on screen.
 
-## Project layout
+Checks:
+
+```bash
+python _smoke.py        # end-to-end integration across every screen
+python run_review.py    # iPhone-12 Chromium walkthrough that screenshots each screen
+                        #   (needs: playwright install chromium, app running)
+```
+
+## 🧠 How it works
+
+A single ASGI app (`api/index.py`) wires CSRF and security-header middleware, then mounts one
+router per slice. State changes go through the scoped `Repo`; provider choices (database,
+storage, OCR, email, SMS) are resolved in `config.py` from the environment.
 
 ```
-api/index.py        # the single ASGI entrypoint (Vercel Function); router wiring,
-                    #   CSRF + security-header middleware, dev seed
+api/index.py   single Vercel Function: middleware, router wiring, dev seed
 app/
-  config.py         # env settings + MTD thresholds/deadlines (config, not code)
-  models.py db.py   # SQLAlchemy models + scoped Repo (the anti-IDOR backstop)
-  security.py       # signed-cookie sessions, CSRF, OTP, get_current_user
-  storage.py ocr.py notify.py   # provider-swappable: R2/local, vision-LLM/stub, Resend/console
-  sa103.py tax.py   # SA103 box mapping + mandation engine + plain-English status
+  config.py        env settings + MTD thresholds/deadlines (config, not code)
+  models.py db.py  SQLAlchemy models + scoped Repo (anti-IDOR)
+  security.py      signed-cookie sessions, CSRF, OTP
+  storage.py ocr.py notify.py   provider-swappable: R2/local, vision-LLM/stub, Resend/console
+  sa103.py tax.py  SA103 box mapping + mandation engine + plain-English status
   export.py reminders.py
-  routes/           # core, media, auth, capture, records, categories, status, export, cron
-  templates/        # base.html + screens + HTMX partials
-public/             # app.css, app.js, manifest.json, sw.js, vendored htmx/alpine
-vercel.json         # FastAPI as one Function + /public CDN rewrite + daily cron
+  routes/          core, media, auth, capture, records, categories, status, export, cron
+  templates/       base.html + screens + HTMX partials
+public/            app.css, app.js, manifest.json, sw.js, vendored htmx/alpine
 ```
 
-## Deploying to Vercel
+## 🗺 Roadmap
 
-`vercel.json` builds `api/index.py` with `@vercel/python` (with
-`includeFiles: ["app/**"]` so the dynamically-imported routers **and** the Jinja
-templates are bundled), serves `/public` from the CDN, and registers the daily
-reminder cron (`0 7 * * *`).
+Runs locally end to end. Deploy config for Vercel + Neon + R2 lives in `vercel.json`, but the
+app is not currently hosted at a public URL.
 
-**Deploy:** push to `master` (auto-deploys if the repo is linked) or run
-`vercel` / `vercel --prod`.
-
-**It boots with zero config.** On Vercel the filesystem is read-only except
-`/tmp`, so with no env vars the SQLite DB + receipt storage fall back to `/tmp`,
-so the app runs immediately, but `/tmp` is **ephemeral** (data resets on cold
-starts, not shared across instances). For a real deployment set:
-
-| Variable | Why |
-|---|---|
-| `DATABASE_URL` | **Neon** pooled URL: `postgresql+psycopg://USER:PW@ep-xxx-pooler.REGION.aws.neon.tech/DB?sslmode=require`. Without it, data lives in ephemeral `/tmp`. |
-| `SECRET_KEY` | Long random string that signs the session + CSRF cookies. |
-| `ENV` = `production` | Marks prod (also makes cookies `Secure`). |
-| `DEV_SHOW_OTP` = `false` | **Security:** otherwise the 6-digit sign-in code is shown on the login screen to anyone. |
-| `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_ENDPOINT`, `R2_BUCKET` | Cloudflare R2, so receipt photos persist. Without it, uploads fail on the read-only FS. |
-| `GEMINI_API_KEY` (or `OPENAI_API_KEY` / `ANTHROPIC_API_KEY`) | Real receipt OCR instead of the stub. |
-| `RESEND_API_KEY` + a verified `EMAIL_FROM` | Emails the sign-in code + reminders for real (see logging-in below). |
-
-#### Cloudflare R2 (receipt photos): common gotchas
-
-Receipts upload **straight from the phone to R2** via a presigned PUT, so two
-things must *both* be true or photos fail silently and nothing reaches the bucket:
-
-1. **Set the `R2_*` vars in the Vercel project** (Settings → Environment Variables),
-   then redeploy; a local `.env` is never uploaded to Vercel. You can set either
-   `R2_ENDPOINT` (`https://<account-id>.r2.cloudflarestorage.com`) **or** just
-   `R2_ACCOUNT_ID` (the endpoint is derived from it). The R2 API **token must have
-   read+write on the exact bucket named in `R2_BUCKET`**; a token scoped to a
-   *different* bucket returns `AccessDenied`.
-2. **Give the bucket a CORS policy** so the browser may PUT from your app's origin
-   (Cloudflare → R2 → your bucket → Settings → CORS Policy):
-
-   ```json
-   [
-     {
-       "AllowedOrigins": ["https://your-app.vercel.app"],
-       "AllowedMethods": ["GET", "PUT"],
-       "AllowedHeaders": ["content-type"],
-       "MaxAgeSeconds": 3600
-     }
-   ]
-   ```
-
-**Verify in one place:** sign in and open `/api/diag`. It reports the selected
-`storage`, the endpoint/bucket it's pointed at, and runs a live server-side
-write/read against R2 (`r2_test`). `ok: true` there means storage works and any
-remaining upload failure is CORS; an error names the real cause.
-
-Run Alembic migrations against the **direct** (non-pooled) Neon connection from
-CI for schema changes; `create_all` runs at startup as an idempotent safety net.
-
-### Logging in on the deployed app (without an email provider)
-
-The sign-in flow emails a 6-digit code. Until you wire `RESEND_API_KEY`, the
-"email" is printed to **stdout**, which appears in the **Vercel runtime logs**
-(Dashboard → your deployment → *Logs*, or `vercel logs <deployment-url>`). Look
-for a block like:
-
-```
-============================================================
-[MTD EMAIL] -> you@example.com  |  Your Tidy Books sign-in code
-------------------------------------------------------------
-Your sign-in code is 559246. It expires in 15 minutes.
-============================================================
-```
-
-Enter that code to sign in. (Quick alternative for a private demo: set
-`DEV_SHOW_OTP=true` and the code is shown right on the login screen, but anyone
-could then sign in as any email, so don't leave it on for real use.)
-
-> Note: moving off the `functions` block dropped `maxDuration` to the Hobby
-> default (10s). The stub and typical OCR calls fit; if real OCR ever times out,
-> that's the lever to raise (Pro).
-
-## Checks
-
-- `python _smoke.py`: end-to-end integration test across every slice (asserts
-  HTMX responses are clean fragments).
-- `python run_review.py`: drives an iPhone-12-emulated Chromium through the whole
-  app and screenshots each screen into `screenshots/` (needs `playwright install chromium`).
+- [ ] Deploy to a public URL (Vercel Function + Neon + R2)
+- [ ] Wire a real OCR key by default (the stub is the offline default)
+- Known limitation: with an empty `.env` on Vercel, data lives in ephemeral `/tmp` and resets on cold start; set `DATABASE_URL` (Neon) and the `R2_*` keys for persistence.
+</content>

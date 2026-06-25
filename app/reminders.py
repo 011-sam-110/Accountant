@@ -69,21 +69,21 @@ def _subject_body(obligation: dict, days_until: int, name: str) -> tuple[str, st
             f"Just a friendly heads-up — {thing} is due on {due_str} "
             f"({days_until} days away). There's nothing you need to do this "
             f"minute; we'll walk you through it when you're ready.\n\n"
-            f"You can review your figures any time in Tidy Books.\n"
+            f"You can review your figures any time in EasyBooks.\n"
         )
     elif days_until == 1:
         subject = f"Tomorrow: {thing} is due {due_str}"
         body = (
             f"Hi {who},\n\n"
             f"A quick reminder that {thing} is due tomorrow, {due_str}. "
-            f"It only takes a few minutes — open Tidy Books and we'll guide you "
+            f"It only takes a few minutes — open EasyBooks and we'll guide you "
             f"through it step by step.\n"
         )
     elif days_until == 0:
         subject = f"Today: {thing} is due"
         body = (
             f"Hi {who},\n\n"
-            f"Today's the day — {thing} is due. Open Tidy Books whenever you "
+            f"Today's the day — {thing} is due. Open EasyBooks whenever you "
             f"have a few minutes and we'll help you get it sent. Nothing to "
             f"worry about; we've kept everything ready for you.\n"
         )
@@ -92,7 +92,7 @@ def _subject_body(obligation: dict, days_until: int, name: str) -> tuple[str, st
         body = (
             f"Hi {who},\n\n"
             f"It looks like {thing} (due {due_str}) hasn't gone in yet. No "
-            f"panic — it's quick to sort. Open Tidy Books and we'll help you "
+            f"panic — it's quick to sort. Open EasyBooks and we'll help you "
             f"catch up right away.\n"
         )
     return subject, body
@@ -103,12 +103,12 @@ def _sms_body(obligation: dict, days_until: int) -> str:
     thing = ("final yearly summary" if obligation["kind"] == "final"
              else "3-monthly HMRC update")
     if days_until < 0:
-        return (f"Tidy Books: your {thing} (due {due_str}) hasn't gone in yet — "
+        return (f"EasyBooks: your {thing} (due {due_str}) hasn't gone in yet — "
                 f"open the app when you can and we'll help you catch up.")
     if days_until == 0:
-        return (f"Tidy Books: your {thing} is due today. Open the app and we'll "
+        return (f"EasyBooks: your {thing} is due today. Open the app and we'll "
                 f"walk you through it.")
-    return (f"Tidy Books: your {thing} is due tomorrow ({due_str}). Open the app "
+    return (f"EasyBooks: your {thing} is due tomorrow ({due_str}). Open the app "
             f"and we'll help you send it.")
 
 

@@ -1,4 +1,4 @@
-# CLAUDE.md — Tidy Books
+# CLAUDE.md — EasyBooks
 
 Operating guide for Claude Code agents in this repo. Optimised for **throughput with
 a quality gate**: every change is built, self-reviewed, hardened, then opened as a PR.

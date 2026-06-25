@@ -53,7 +53,7 @@ def login_post(request: Request, email: str = Form(""),
                        email_value=email)
     code = create_otp(s, email, ip=request.client.host if request.client else None)
     html, text = signin_email(code)
-    send_email(email, "Your Tidy Books sign-in code", html, text)
+    send_email(email, "Your EasyBooks sign-in code", html, text)
     from ..config import settings  # local import avoids circular at module level
     return partial(request, "login.html", step="code", email=email,
                    dev_code=code if settings.dev_show_otp else None)

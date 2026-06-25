@@ -1,9 +1,9 @@
 {% extends "base.html" %}
-{% block title %}Welcome — Tidy Books{% endblock %}
+{% block title %}Welcome — EasyBooks{% endblock %}
 
 {% block topbar %}
 <header class="topbar">
-  <div class="brand">Tidy Books<small>MTD made simple</small></div>
+  <div class="brand">EasyBooks<small>MTD made simple</small></div>
 </header>
 {% endblock %}
 
@@ -24,7 +24,7 @@
       <p style="font-size:3rem;margin:0;">📸</p>
       <p class="h1">Snap a receipt, we sort it.</p>
       <p class="lead">Stay ready for the taxman — stress-free.</p>
-      <p class="muted">Tidy Books helps UK driving instructors track income and expenses, and stay on top of Making Tax Digital. You just photograph receipts; we handle the rest.</p>
+      <p class="muted">EasyBooks helps UK driving instructors track income and expenses, and stay on top of Making Tax Digital. You just photograph receipts; we handle the rest.</p>
     </div>
     <div class="actionbar">
       <button class="btn btn-primary" @click="step = 2">Next</button>
@@ -55,7 +55,7 @@
   <div x-show="step === 3" x-cloak>
     <div class="card stack">
       <p class="h2">Use it like an app</p>
-      <p class="muted">On your iPhone, you can add Tidy Books to your home screen for quick access — just like a real app, without the App Store.</p>
+      <p class="muted">On your iPhone, you can add EasyBooks to your home screen for quick access — just like a real app, without the App Store.</p>
       <ol style="padding-left:1.25rem;line-height:1.8;" class="muted">
         <li>Tap the <strong>Share</strong> button <span aria-label="Share icon">⬆️</span> in Safari</li>
         <li>Scroll down and tap <strong>Add to Home Screen</strong></li>
@@ -68,7 +68,7 @@
         <button class="btn btn-ghost" @click="step = 2">Back</button>
         <button class="btn btn-primary"
                 hx-post="/onboarding/done"
-                hx-target="#screen">Start using Tidy Books</button>
+                hx-target="#screen">Start using EasyBooks</button>
       </div>
     </div>
   </div>
