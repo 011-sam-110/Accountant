@@ -63,7 +63,7 @@ $preheader&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwn
         <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 24px;">
           <tr>
             <td style="background:$green;border-radius:9px;width:34px;height:34px;text-align:center;vertical-align:middle;color:#ffffff;font-size:19px;font-weight:700;font-family:$font;line-height:34px;">&#10003;</td>
-            <td style="padding-left:11px;font-family:$font;font-size:18px;font-weight:700;color:$ink;letter-spacing:-.2px;">Tidy&nbsp;Books</td>
+            <td style="padding-left:11px;font-family:$font;font-size:18px;font-weight:700;color:$ink;letter-spacing:-.2px;">EasyBooks</td>
           </tr>
         </table>
         $content
